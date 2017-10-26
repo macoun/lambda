@@ -35,7 +35,7 @@ void repl(int argc, const char *argv[])
   expr exp;
   int error;
 
-  eprintf(COLOR_CONSOLE, "Lisper REPL " __REPL_VERSION__ "\n");
+  eprintf(COLOR_CONSOLE, "Lambda REPL " __REPL_VERSION__ "\n");
 
   stop = 0;
   while (!stop)

@@ -9,13 +9,13 @@ CC = gcc
 CFLAGS = -DCOLORED
 LDFLAGS = -L. #-lslang
 
-lisper: $(OBJ)
+lambda: $(OBJ)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(LIBS) $(OBJ) -o $@
 
-libslang.a: $(LIBOBJ)
+liblambda.a: $(LIBOBJ)
 	$(AR) $(ARFLAGS) $@ $^
 
 .PHONY: clean
 
 clean:
-	rm *.o lisper > /dev/null 2>&1
+	rm *.o lambda > /dev/null 2>&1
