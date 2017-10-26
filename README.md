@@ -5,7 +5,7 @@ This is my toy interpreter. Do not expect a complete implementation at this time
 # Installation
 
 	git clone https://github.com/macoun/lambda.git
-	cd src
+	cd lambda/src
 	make
 
 The executable `lambda` will be created in the _src_ directory.
