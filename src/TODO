@@ -1,0 +1,12 @@
+EVALUATOR
+	- Add binary type ('true)
+	- Add decimal type
+	- Add special types (char: #\a, #\b, ...)
+	- Add macro expander (define->lambda, seq->exp, let->lambda, cond->if, etc.)
+	- Implement error handling in evaluator
+	- Parameterize MACHINE_SIZE
+	- Add Scheme R6RS support
+	- Do groceries. Make coffee
+BUGS
+	- Segmentation fault when typing (1 . 2) in REPL
+	- A lot.
