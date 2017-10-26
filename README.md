@@ -4,9 +4,9 @@ This is my toy interpreter. Do not expect a complete implementation at this time
 
 # Installation
 
-  git clone https://github.com/macoun/lambda.git
-  cd src
-  make
+	git clone https://github.com/macoun/lambda.git
+	cd src
+	make
 
 The executable `lambda` will be created in the _src_ directory.
 
@@ -14,11 +14,11 @@ The executable `lambda` will be created in the _src_ directory.
 
 To interpret a source file
 
-  ./lambda ../examples/sandbox.scm
+	./lambda ../examples/sandbox.scm
 
 To land in the REPL console. Yes, you guessed it.
 
-  ./lambda
+	./lambda
 
 # License
 
