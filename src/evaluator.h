@@ -16,12 +16,12 @@
 typedef expr (*primitive_f)(expr);
 extern expr *__registers[];
 
-int lisper_init();
+int lisper_init(void);
 void add_primitives(expr names, expr funcs);
 expr *lookup_name(const char *name);
 
-void push_registers();
-void pop_registers();
+void push_registers(void);
+void pop_registers(void);
 
 #define is_tagged(e, tag) \
   !is_nil(e) && is_pair(e) && is_sym(car(e)) \

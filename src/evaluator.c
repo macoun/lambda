@@ -41,31 +41,31 @@ expr *__registers[] =
 
 static cont_f __goto;
 
-static void eval_dispatch();
-static void ev_appl_did_operator();
-static void ev_appl_operand_loop();
-static void ev_appl_accum_arg();
-static void ev_appl_accum_last_arg();
-static void ev_appl_last_arg();
-static void ev_begin();
-static void ev_sequence();
-static void ev_sequence_cont();
-static void ev_sequence_end();
-static void ev_definition();
-static void ev_definition_cont();
-static void ev_application();
-static void ev_lambda();
-static void ev_quote();
-static void ev_variable();
-static void ev_self();
-static void ev_if();
-static void ev_if_alternative();
-static void ev_if_consequent();
-static void ev_if_decide();
+static void eval_dispatch(void);
+static void ev_appl_did_operator(void);
+static void ev_appl_operand_loop(void);
+static void ev_appl_accum_arg(void);
+static void ev_appl_accum_last_arg(void);
+static void ev_appl_last_arg(void);
+static void ev_begin(void);
+static void ev_sequence(void);
+static void ev_sequence_cont(void);
+static void ev_sequence_end(void);
+static void ev_definition(void);
+static void ev_definition_cont(void);
+static void ev_application(void);
+static void ev_lambda(void);
+static void ev_quote(void);
+static void ev_variable(void);
+static void ev_self(void);
+static void ev_if(void);
+static void ev_if_alternative(void);
+static void ev_if_consequent(void);
+static void ev_if_decide(void);
 
-static void apply_dispatch();
-static void primitive_apply();
-static void compound_apply();
+static void apply_dispatch(void);
+static void primitive_apply(void);
+static void compound_apply(void);
 
 static expr adjoin_arg(expr val, expr argl);
 

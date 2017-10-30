@@ -38,9 +38,9 @@ struct cell *__front;
 const long MACHINE_SIZE = 1024*10;
 const long REGISTER_COUNT = 0;
 const long GLUE_SIZE = 20;
-const struct cell NIL = {0, NULL};
+const struct cell NIL = mk_cell(0, NULL);
 
-void gc();
+void gc(void);
 void print_mem(struct cell *mem)
 {
   struct cell c;
@@ -242,8 +242,8 @@ struct cell relocate(long old)
   return __back[old];
 }
 
-void gc_run();
-static void gc_flip();
+void gc_run(void);
+static void gc_flip(void);
 
 static void check_mem_refs()
 {

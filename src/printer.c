@@ -32,26 +32,6 @@ static void print_pair(expr exp)
   printf(")");
 }
 
-static void _print_list(expr exp)
-{
-  if (is_nil(cdr(exp)))
-  {
-    print_exp(car(exp));
-  }
-  else if (is_pair(cdr(exp)))
-  {
-    print_exp(car(exp));
-    printf(" ");
-    print_list(cdr(exp));
-  }
-  else
-  {
-    print_exp(car(exp));
-    printf(" . ");
-    print_exp(cdr(exp));
-  }
-}
-
 static void print_vector(expr exp)
 {
   int i;

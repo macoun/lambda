@@ -6,7 +6,7 @@ SRC = $(wildcard *.c)
 OBJ = $(patsubst %.c, %.o, $(SRC))
 
 CC = gcc
-CFLAGS = -DCOLORED
+CFLAGS = -Wall -DCOLORED
 LDFLAGS = -L. #-lslang
 
 lambda: $(OBJ)

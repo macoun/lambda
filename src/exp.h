@@ -64,7 +64,7 @@ do {if (vect.array) vect.array[idx + 1] = item;} while (0)
 
 #define is_eq(a, b) (a->value == b.value)
 
-#define mk_cell(t, v) ((struct cell){t, v})
+#define mk_cell(t, v) ((struct cell){t, {v}})
 #define mk_num(num) mk_cell(INTEGER, (void *)num)
 #define mk_str(str) mk_cell(STRING, strdup(str))
 #define mk_sym(str) mk_cell(SYMBOL, strdup(str))

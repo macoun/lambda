@@ -44,11 +44,11 @@ struct cell
 
 extern const struct cell NIL;
 
-int mem_init();
+int mem_init(void);
 struct cell *mem_new(long s);
 size_t mem_array_size(struct cell c);
 
-long mem_get_stackptr();
+long mem_get_stackptr(void);
 void mem_set_stackptr(long sp);
 
 void mem_push(struct cell c);
