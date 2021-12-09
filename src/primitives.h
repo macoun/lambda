@@ -12,6 +12,11 @@
 #include "exp.h"
 
 expr op_is_null(expr args);
+expr op_is_number(expr args);
+expr op_is_string(expr args);
+expr op_is_quoted(expr args);
+expr op_is_pair(expr args);
+expr op_is_symbol(expr args);
 
 expr op_println(expr args);
 expr op_print(expr args);
@@ -33,6 +38,5 @@ expr op_vector_create(expr args);
 expr op_vector_size(expr args);
 expr op_vector_get(expr args);
 expr op_vector_set(expr args);
-
 
 #endif /* primitives_h */

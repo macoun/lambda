@@ -31,13 +31,11 @@ expr __proc;
 expr __continue;
 
 expr *__registers[] =
-{
-  &__exp, &__val, &__env,
-  &__unev, &__argl, &__proc,
-  &__continue,
-  NULL
-};
-
+    {
+        &__exp, &__val, &__env,
+        &__unev, &__argl, &__proc,
+        &__continue,
+        NULL};
 
 static cont_f __goto;
 
@@ -78,7 +76,7 @@ int lisper_init()
 
   status = mem_init();
 
-  vars = listn(17,
+  vars = listn(22,
                mk_sym("+"),
                mk_sym("*"),
                mk_sym("-"),
@@ -86,6 +84,10 @@ int lisper_init()
                mk_sym(">"),
                mk_sym("<"),
                mk_sym("null?"),
+               mk_sym("number?"),
+               mk_sym("string?"),
+               mk_sym("pair?"),
+               mk_sym("symbol?"),
                mk_sym("make-vector"),
                mk_sym("vector-length"),
                mk_sym("vector-ref"),
@@ -98,7 +100,7 @@ int lisper_init()
                mk_sym("newline"),
                mk_sym("println"),
                NIL);
-  vals = listn(17,
+  vals = listn(22,
                mk_prim(op_add),
                mk_prim(op_mul),
                mk_prim(op_sub),
@@ -106,6 +108,10 @@ int lisper_init()
                mk_prim(op_gt),
                mk_prim(op_lt),
                mk_prim(op_is_null),
+               mk_prim(op_is_number),
+               mk_prim(op_is_string),
+               mk_prim(op_is_pair),
+               mk_prim(op_is_symbol),
                mk_prim(op_vector_create),
                mk_prim(op_vector_size),
                mk_prim(op_vector_get),
@@ -146,12 +152,12 @@ expr eval(expr exp)
   __continue = make_cont(NULL);
   __goto = eval_dispatch;
 
-//  push(__env);
+  // push(__env);
   while (__goto != NULL)
   {
     __goto();
   }
-//  pop(__env);
+  // pop(__env);
   val = __val;
   mem_set_stackptr(jmp);
   pop_registers();
@@ -319,8 +325,8 @@ static void ev_begin()
 
 static void ev_sequence()
 {
-  __exp = car(__unev); // Next expression
-    if (is_nil(cdr(__unev))) // If last expression
+  __exp = car(__unev);     // Next expression
+  if (is_nil(cdr(__unev))) // If last expression
   {
     __goto = ev_sequence_end;
   }
@@ -372,7 +378,6 @@ static void ev_sequence_cont()
   __unev = cdr(__unev); // Rest expression
   __goto = ev_sequence;
 }
-
 
 static void apply_dispatch()
 {

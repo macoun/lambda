@@ -182,7 +182,7 @@ expr op_list(expr args)
 expr op_print(expr args)
 {
   expr current;
-  for (;!is_nil(args); args = cdr(args))
+  for (; !is_nil(args); args = cdr(args))
   {
     current = car(args);
     if (current.type == STRING)
@@ -208,6 +208,34 @@ expr op_is_null(expr args)
 {
   long b;
   b = is_nil(car(args)) ? 1 : 0;
+  return mk_num(b);
+}
+
+expr op_is_number(expr args)
+{
+  long b;
+  b = is_num(car(args)) ? 1 : 0;
+  return mk_num(b);
+}
+
+expr op_is_string(expr args)
+{
+  long b;
+  b = is_str(car(args)) ? 1 : 0;
+  return mk_num(b);
+}
+
+expr op_is_pair(expr args)
+{
+  long b;
+  b = is_pair(car(args)) ? 1 : 0;
+  return mk_num(b);
+}
+
+expr op_is_symbol(expr args)
+{
+  long b;
+  b = is_sym(car(args)) ? 1 : 0;
   return mk_num(b);
 }
 

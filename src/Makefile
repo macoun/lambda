@@ -3,11 +3,15 @@ LIBOBJ = $(patsubst %.c, %.o, $(LIBSRC))
 
 SRC = $(wildcard *.c)
 #SRC = main.c
-OBJ = $(patsubst %.c, %.o, $(SRC))
+OBJDIR = ../obj
+OBJ = $(patsubst %.c, $(OBJDIR)/%.o, $(SRC))
 
 CC = gcc
 CFLAGS = -Wall -DCOLORED
 LDFLAGS = -L. #-lslang
+
+$(OBJDIR)/%.o : %.c
+	$(CC) $(CFLAGS) -c $< -o $@
 
 lambda: $(OBJ)
 	$(CC) $(CFLAGS) $(LDFLAGS) $(LIBS) $(OBJ) -o $@
@@ -18,4 +22,4 @@ liblambda.a: $(LIBOBJ)
 .PHONY: clean
 
 clean:
-	rm *.o lambda > /dev/null 2>&1
+	rm $(OBJ) lambda > /dev/null 2>&1
