@@ -35,7 +35,7 @@ static void print_pair(expr exp)
 static void print_vector(expr exp)
 {
   int i;
-  
+
   printf("#(");
   for (i = 0; i < vect_size(exp); i++)
   {
@@ -89,11 +89,11 @@ void print_exp(expr exp)
   {
     print_vector(exp);
   }
-// else if (is_quote(exp))
-//  {
-//    printf("'");
-//    print_exp(car(exp)); // text-of-quotation (quote_text)
-//  }
+  // else if (is_quote(exp))
+  //  {
+  //    printf("'");
+  //    print_exp(car(exp)); // text-of-quotation (quote_text)
+  //  }
   else if (is_list(exp))
   {
     print_list(exp);
@@ -102,14 +102,28 @@ void print_exp(expr exp)
   {
     print_pair(exp);
   }
-//  else if (is_pair(exp))
-//  {
-//    printf("(");
-//    print_list(exp);
-//    printf(")");
-//  }
+  //  else if (is_pair(exp))
+  //  {
+  //    printf("(");
+  //    print_list(exp);
+  //    printf(")");
+  //  }
   else
   {
     printf("Unknown type: %d\n", exp.type);
   }
 }
+/*-----------------------------------------------------------------------*/
+/* Printing and logging                                                  */
+/*-----------------------------------------------------------------------*/
+// static char *typenames[] = {
+//     "NIL",
+//     "MOVED",
+//     "INTEGER",
+//     "FLOAT",
+//     "SYMBOL",
+//     "STRING",
+//     "PAIR",
+//     "VECTOR",
+//     "PRIMITIVE",
+//     "CUSTOM"};

@@ -41,43 +41,42 @@ char *read_file(const char *fname)
 // You must call lisper_init() first!
 int evaluate_file(const char *fname)
 {
-    char *buffer, *p;
-    expr exp, res;
-    int err;
+  char *buffer, *p;
+  expr exp, res;
+  int err;
 
-    buffer = read_file(fname);
-    p = buffer;
-    for (;*p != '\0';)
+  buffer = read_file(fname);
+  p = buffer;
+  for (; *p != '\0';)
+  {
+    exp = parse_exp(&p, &err);
+    if (err == PERR_FIN)
+      break;
+
+    if (err != 0)
     {
-      exp = parse_exp(&p, &err);
-	  if (err == PERR_FIN)
-		  break;
-
-      if  (err != 0)
-      {
-        error("Error: %d\n", err);
-        break;
-      }
-
-      push(exp);
-
-          // printf("Parsed: ");
-          // print_exp(exp);
-          // printf("\n");
-          // fflush(stdout);
-
-      res = eval(exp);
-
-      //    printf("Evaluated: ");
-      //    print_exp(exp);
-      //    printf("\n");
-
-      pop(exp);
-
+      error("Error: %d\n", err);
+      break;
     }
 
-    free(buffer);
-	return 0;
+    push(exp);
+
+    // printf("Parsed: ");
+    // print_exp(exp);
+    // printf("\n");
+    // fflush(stdout);
+
+    res = eval(exp);
+
+    //    printf("Evaluated: ");
+    //    print_exp(exp);
+    //    printf("\n");
+
+    pop(exp);
+  }
+
+  free(buffer);
+  return 0;
 }
 
 expr prim_say_hello(expr args)
@@ -109,11 +108,10 @@ void test_lookup_name()
     res = eval(cmd);
     if (is_num(res))
       printf("lj-potential(4) = %ld\n", res.longv);
-
   }
 }
 
-int main(int argc, const char * argv[])
+int main(int argc, const char *argv[])
 {
   if (!lisper_init())
   {
@@ -121,8 +119,8 @@ int main(int argc, const char * argv[])
     exit(1);
   }
 
-  add_primitives( list(mk_sym("say-hello")),
-                  list(mk_prim(prim_say_hello)));
+  add_primitives(list(mk_sym("say-hello")),
+                 list(mk_prim(prim_say_hello)));
 
   if (argc > 1)
   {
@@ -130,12 +128,12 @@ int main(int argc, const char * argv[])
     // test_lookup_name();
   }
   else
-	  repl(argc, argv);
+    repl(argc, argv);
 
   return 0;
 }
 
-int main3(int argc, const char * argv[])
+int main3(int argc, const char *argv[])
 {
   if (!lisper_init())
   {
@@ -144,13 +142,13 @@ int main3(int argc, const char * argv[])
   }
 
   if (argc > 1)
-  	  return evaluate_file(argv[1]);
+    return evaluate_file(argv[1]);
   else
-	  repl(argc, argv);
+    repl(argc, argv);
 
   return 0;
 }
-int main2(int argc, const char * argv[])
+int main2(int argc, const char *argv[])
 {
   const char *fname = "/Users/ayaz/Dropbox/Sources/Lisper/examples/test2.sc";
   int error;

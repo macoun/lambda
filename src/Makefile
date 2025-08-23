@@ -7,7 +7,8 @@ OBJDIR = ../obj
 OBJ = $(patsubst %.c, $(OBJDIR)/%.o, $(SRC))
 
 CC = gcc
-CFLAGS = -Wall -DCOLORED
+# CC = clang
+CFLAGS = -std=c99 -Wall -DCOLORED
 LDFLAGS = -L. #-lslang
 
 $(OBJDIR)/%.o : %.c

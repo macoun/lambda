@@ -20,17 +20,17 @@ static expr frame_vals(expr frame);
 void print_frame(expr frame)
 {
   expr vars, vals;
-  
+
   vars = frame_vars(frame);
   vals = frame_vals(frame);
-  
+
   while (!is_nil(vars))
   {
     print_exp(car(vars));
     printf(":\t");
     print_exp(car(vals));
     printf("\t\t*\n");
-    
+
     vars = cdr(vars);
     vals = cdr(vals);
   }
@@ -40,24 +40,24 @@ expr *env_lookup(expr var, expr env)
 {
   expr frame;
   expr *res;
-  
+
   while (!is_nil(env))
   {
     frame = env_frame(env);
     res = frame_lookup(frame, var);
     if (res != NULL)
       return res;
-    
+
     env = env_parent(env);
   }
-  
+
   return NULL;
 }
 
 expr env_extend(expr vars, expr vals, expr env)
 {
   expr frame;
-  
+
   push(env);
   frame = make_frame(vars, vals);
   pop(env);
@@ -68,7 +68,7 @@ expr env_define_variable(expr var, expr val, expr env)
 {
   expr frame;
   expr *res;
-  
+
   frame = env_frame(env);
   res = frame_lookup(frame, var);
   if (res != NULL)
@@ -89,7 +89,6 @@ expr env_parent(expr env)
   return cdr(env);
 }
 
-
 // Frame
 expr make_frame(expr vars, expr vals)
 {
@@ -109,18 +108,18 @@ expr frame_vals(expr frame)
 expr *frame_lookup(expr frame, expr var)
 {
   expr vars, vals;
-  
-//  printf("\nLookup for %s\n", var.str);
-//  print_frame(frame);
-  
+
+  //  printf("\nLookup for %s\n", var.str);
+  //  print_frame(frame);
+
   vars = frame_vars(frame);
   vals = frame_vals(frame);
-  
+
   while (!is_nil(vars))
   {
     if (is_equal(car(vars), var))
       return vals.array;
-    
+
     vars = cdr(vars);
     vals = cdr(vals);
   }
@@ -130,15 +129,15 @@ expr *frame_lookup(expr frame, expr var)
 static void frame_bind(expr frame, expr var, expr val)
 {
   expr exp;
-  
+
   push(val);
   push(frame);
   exp = cons(var, car(frame));
   pop(frame);
   pop(val);
-  
+
   set_car(frame, exp);
-  
+
   push(frame);
   exp = cons(val, cdr(frame));
   pop(frame);

@@ -76,7 +76,7 @@ int lisper_init()
 
   status = mem_init();
 
-  vars = listn(22,
+  vars = listn(27,
                mk_sym("+"),
                mk_sym("*"),
                mk_sym("-"),
@@ -88,6 +88,11 @@ int lisper_init()
                mk_sym("string?"),
                mk_sym("pair?"),
                mk_sym("symbol?"),
+               mk_sym("zero?"),
+               mk_sym("positive?"),
+               mk_sym("negative?"),
+               mk_sym("odd?"),
+               mk_sym("even?"),
                mk_sym("make-vector"),
                mk_sym("vector-length"),
                mk_sym("vector-ref"),
@@ -100,7 +105,7 @@ int lisper_init()
                mk_sym("newline"),
                mk_sym("println"),
                NIL);
-  vals = listn(22,
+  vals = listn(27,
                mk_prim(op_add),
                mk_prim(op_mul),
                mk_prim(op_sub),
@@ -112,6 +117,11 @@ int lisper_init()
                mk_prim(op_is_string),
                mk_prim(op_is_pair),
                mk_prim(op_is_symbol),
+               mk_prim(op_is_zero),
+               mk_prim(op_is_positive),
+               mk_prim(op_is_negative),
+               mk_prim(op_is_odd),
+               mk_prim(op_is_even),
                mk_prim(op_vector_create),
                mk_prim(op_vector_size),
                mk_prim(op_vector_get),

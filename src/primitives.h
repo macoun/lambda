@@ -18,6 +18,12 @@ expr op_is_quoted(expr args);
 expr op_is_pair(expr args);
 expr op_is_symbol(expr args);
 
+expr op_is_zero(expr args);
+expr op_is_positive(expr args);
+expr op_is_negative(expr args);
+expr op_is_odd(expr args);
+expr op_is_even(expr args);
+
 expr op_println(expr args);
 expr op_print(expr args);
 

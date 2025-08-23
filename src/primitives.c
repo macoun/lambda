@@ -241,6 +241,59 @@ expr op_is_symbol(expr args)
 
 #pragma mark -
 
+expr op_is_zero(expr args)
+{
+  long b;
+  expr arg;
+  
+  arg = car(args);
+  b = (is_num(arg) && arg.intv == 0) ? 1 : 0;
+  return mk_num(b);
+}
+
+expr op_is_positive(expr args)
+{
+  long b;
+  expr arg;
+  
+  arg = car(args);
+  b = (is_num(arg) && arg.intv > 0) ? 1 : 0;
+  return mk_num(b);
+}
+
+expr op_is_negative(expr args)
+{
+  long b;
+  expr arg;
+  
+  arg = car(args);
+  b = (is_num(arg) && arg.intv < 0) ? 1 : 0;
+  return mk_num(b);
+}
+
+expr op_is_odd(expr args)
+{
+  long b;
+  expr arg;
+  
+  arg = car(args);
+  b = (is_num(arg) && abs(arg.intv) % 2 == 1) ? 1 : 0;
+  return mk_num(b);
+}
+
+expr op_is_even(expr args)
+{
+  long b;
+  expr arg;
+  
+  arg = car(args);
+  b = (is_num(arg) && arg.intv % 2 == 0) ? 1 : 0;
+  return mk_num(b);
+}
+
+
+#pragma mark -
+
 expr op_vector_create(expr args)
 {
   long size, i;

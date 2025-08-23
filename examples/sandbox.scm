@@ -75,7 +75,14 @@
   (iter-loop 0 0))
 
 (display "Iterating... ")
-(display (iter 500000 (lambda (i) (+ 1 i))))
+;(define result (iter 500000 (lambda (i) (+ 1 i))))
+(display (make-vector 1 2 3 4 5 6 7 8 9 0))
+(define result (iter 500000 (lambda (i) (+ i (vector-length (make-vector 1 2 3 4 5 6 7 8 9 0))))))
+
+
+(display result)
+(newline)
+(display "Iterating finished " result)
 (newline)
 
 ;-----------------------------------

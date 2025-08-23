@@ -20,13 +20,8 @@ int lisper_init(void);
 void add_primitives(expr names, expr funcs);
 expr *lookup_name(const char *name);
 
-void push_registers(void);
-void pop_registers(void);
-
 #define is_tagged(e, tag) \
-  !is_nil(e) && is_pair(e) && is_sym(car(e)) \
-  && !strcasecmp(car(e).str, tag)
-
+  !is_nil(e) && is_pair(e) && is_sym(car(e)) && !strcasecmp(car(e).str, tag)
 
 // Self-evaluating
 #define is_self_eval(e) \
@@ -79,11 +74,9 @@ void pop_registers(void);
   is_tagged(e, "define") || is_tagged(e, "def")
 
 #define definition_variable(e) \
-  ((is_sym(cadr(e)))?cadr(e):caadr(e))
+  ((is_sym(cadr(e))) ? cadr(e) : caadr(e))
 
-#define definition_value(e) (\
-  (is_sym(cadr(e)))? \
-    caddr(e) : \
-    make_lambda(cdadr(e), cddr(e)))
+#define definition_value(e) ( \
+    (is_sym(cadr(e))) ? caddr(e) : make_lambda(cdadr(e), cddr(e)))
 
 #endif /* evaluator_h */
