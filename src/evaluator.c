@@ -149,6 +149,22 @@ expr *lookup_name(const char *name)
   return env_lookup(mk_sym(name), __env);
 }
 
+#pragma mark Stack management
+
+void push_registers()
+{
+  int i;
+  for (i = 0; i <= 6; i++)
+    push(*__registers[i]);
+}
+
+void pop_registers()
+{
+  int i;
+  for (i = 6; i >= 0; i--)
+    pop(*__registers[i]);
+}
+
 #pragma mark Evaluator
 
 expr eval(expr exp)

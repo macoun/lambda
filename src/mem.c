@@ -7,7 +7,6 @@
 //
 
 #include "mem.h"
-#include "evaluator.h"
 
 #include <stdio.h>
 #include <assert.h>
@@ -83,6 +82,86 @@ long segment_sum_sizes(struct segment *seg)
 }
 
 /*-----------------------------------------------------------------------*/
+/* Root management                                                       */
+/*-----------------------------------------------------------------------*/
+// Root set tracking
+#define MAX_ROOT_SETS 10
+#define MAX_ROOTS_PER_SET 20
+
+struct root_set
+{
+  struct cell **roots;
+  int count;
+};
+
+static struct root_set __root_sets[MAX_ROOT_SETS];
+static int __root_set_count = 0;
+
+// Register a set of roots (pointers that GC should treat as roots)
+void mem_add_root_set(struct cell **roots, int count)
+{
+  if (__root_set_count >= MAX_ROOT_SETS)
+  {
+    fprintf(stderr, "Too many root sets registered\n");
+    exit(1);
+  }
+
+  __root_sets[__root_set_count].roots = roots;
+  __root_sets[__root_set_count].count = count;
+  __root_set_count++;
+}
+
+// Unregister a set of roots
+void mem_remove_root_set(struct cell **roots)
+{
+  int i, j;
+  for (i = 0; i < __root_set_count; i++)
+  {
+    if (__root_sets[i].roots == roots)
+    {
+      // Remove this set by shifting all others down
+      for (j = i; j < __root_set_count - 1; j++)
+      {
+        __root_sets[j] = __root_sets[j + 1];
+      }
+      __root_set_count--;
+      return;
+    }
+  }
+}
+
+// Push all registered roots to the GC stack
+void mem_push_roots(void)
+{
+  int i, j;
+
+  for (i = 0; i < __root_set_count; i++)
+  {
+    struct root_set *set = &__root_sets[i];
+    for (j = 0; j < set->count; j++)
+    {
+      mem_push(*(set->roots[j]));
+    }
+  }
+}
+
+// Pop all registered roots from the GC stack
+void mem_pop_roots(void)
+{
+  int i, j;
+
+  // Pop in reverse order of pushing
+  for (i = __root_set_count - 1; i >= 0; i--)
+  {
+    struct root_set *set = &__root_sets[i];
+    for (j = set->count - 1; j >= 0; j--)
+    {
+      mem_pop(set->roots[j]);
+    }
+  }
+}
+
+/*-----------------------------------------------------------------------*/
 /* Memory init and allocation                                            */
 /*-----------------------------------------------------------------------*/
 void gc(void);
@@ -154,20 +233,6 @@ void mem_pop(struct cell *c)
     exit(1);
   }
   *c = __stack->cells[--__stack->size];
-}
-
-void push_registers()
-{
-  int i;
-  for (i = 0; i <= 6; i++)
-    __stack->cells[__stack->size++] = *__registers[i];
-}
-
-void pop_registers()
-{
-  int i;
-  for (i = 6; i >= 0; i--)
-    *__registers[i] = __stack->cells[--__stack->size];
 }
 
 /*-----------------------------------------------------------------------*/
@@ -283,16 +348,18 @@ void gc()
   before = segment_sum_sizes(__front);
   start_time = get_time_ms();
 
-  push_registers();
+  // push_registers();
+  mem_push_roots();
   back = gc_run();
   gc_flip(back);
-  pop_registers();
+  // pop_registers();
+  mem_pop_roots();
 
   // Calculate GC duration
   end_time = get_time_ms();
   after = segment_sum_sizes(__front);
-  fprintf(stdout, "Purged %ld objects in %ld ms [%ld segments]\n",
-          before - after, end_time - start_time, __created_segments);
+  // fprintf(stdout, "Purged %ld objects in %ld ms [%ld segments]\n",
+  // before - after, end_time - start_time, __created_segments);
 
   fflush(stdout);
 }
