@@ -11,20 +11,20 @@
 
 #include <stdio.h>
 #include "mem.h"
+#include "machine.h"
 
 typedef struct cell expr;
 
-expr eval(expr exp);
-expr cons(expr a, expr b);
+expr cons(struct machine *m, expr a, expr b);
 
-expr list(expr first, ...);
-expr listn(int n, ...);
-expr list_append(expr l, expr e);
+expr list(struct machine *m, expr first, ...);
+expr listn(struct machine *m, int n, ...);
+expr list_append(struct machine *m, expr l, expr e);
 long list_length(expr l);
 expr list_tail(expr l);
 int is_list(expr e);
 
-expr vector(long length, expr *exps);
+expr vector(struct machine *m, long length, expr *exps);
 
 int is_equal(expr a, expr b); // should dispatch by data type
 

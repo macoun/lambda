@@ -7,6 +7,8 @@
 //
 
 #include "reader.h"
+#include "logger.h"
+#include "machine.h"
 #include <ctype.h>
 #include <string.h>
 #include <stdio.h>
@@ -14,7 +16,7 @@
 #include <assert.h>
 #include <stdarg.h>
 
-static expr parse_pair(char **sp, int *error)
+static expr parse_pair(struct machine *m, char **sp, int *error)
 {
   char *s;
   expr first, last = NIL, res, tmp;
@@ -32,9 +34,9 @@ static expr parse_pair(char **sp, int *error)
 
   while (*s != ')')
   {
-    push(last);
-    res = parse_exp(&s, error);
-    pop(last);
+    machine_push(m, last);
+    res = parse_exp(m, &s, error);
+    machine_pop(m, &last);
 
     if (*error)
       return NIL;
@@ -49,8 +51,8 @@ static expr parse_pair(char **sp, int *error)
 
     if (is_nil(first))
     {
-      first = last = cons(res, NIL);
-      push(first);
+      first = last = cons(m, res, NIL);
+      machine_push(m, first);
     }
     else
     {
@@ -60,9 +62,9 @@ static expr parse_pair(char **sp, int *error)
       }
       else
       {
-        push(last);
-        tmp = cons(res, NIL);
-        pop(last);
+        machine_push(m, last);
+        tmp = cons(m, res, NIL);
+        machine_pop(m, &last);
         set_cdr(last, tmp);
         last = cdr(last);
       }
@@ -75,11 +77,11 @@ static expr parse_pair(char **sp, int *error)
   }
   *sp = s + 1;
   if (!is_nil(first))
-    pop(first);
+    machine_pop(m, &first);
   return first;
 }
 
-static expr parse_quote(char **sp, int *error)
+static expr parse_quote(struct machine *m, char **sp, int *error)
 {
   char *s;
   expr exp;
@@ -94,9 +96,9 @@ static expr parse_quote(char **sp, int *error)
     return NIL;
   }
 
-  exp = parse_exp(&s, error);
-  exp = cons(exp, NIL);
-  exp = cons(mk_sym("quote"), exp);
+  exp = parse_exp(m, &s, error);
+  exp = cons(m, exp, NIL);
+  exp = cons(m, mk_sym("quote"), exp);
 
   *sp = s;
   return exp;
@@ -127,7 +129,7 @@ static expr parse_string(char **sp, int *error)
   }
 
   exp = mk_cell(STRING,
-               strndup(*sp + 1, s - (*sp) - 1));
+                strndup(*sp + 1, s - (*sp) - 1));
   *sp = s + 1;
   return exp;
 }
@@ -164,7 +166,7 @@ static expr parse_symbol(char **sp, int *error)
   return exp;
 }
 
-expr parse_exp(char **sp, int *error)
+expr parse_exp(struct machine *m, char **sp, int *error)
 {
   expr res;
   char *s;
@@ -195,11 +197,11 @@ expr parse_exp(char **sp, int *error)
 
   if (ch == '(')
   {
-    res = parse_pair(&s, error);
+    res = parse_pair(m, &s, error);
   }
   else if (ch == '\'')
   {
-    res = parse_quote(&s, error);
+    res = parse_quote(m, &s, error);
   }
   else if (ch == '"')
   {

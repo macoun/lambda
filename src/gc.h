@@ -9,5 +9,8 @@
 #ifndef gc_h
 #define gc_h
 
+#include "mem.h"
+
+void gc(struct memory *mem);
 
 #endif /* gc_h */

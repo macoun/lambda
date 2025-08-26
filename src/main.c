@@ -11,6 +11,9 @@
 #include "evaluator.h"
 #include "reader.h"
 #include "printer.h"
+#include "logger.h"
+#include "machine.h"
+#include "repl.h"
 
 char *read_file(const char *fname)
 {
@@ -36,20 +39,17 @@ char *read_file(const char *fname)
   return buffer;
 }
 
-#include "repl.h"
-
-// You must call lisper_init() first!
-int evaluate_file(const char *fname)
+int evaluate_file(struct evaluator *ev, const char *fname)
 {
   char *buffer, *p;
-  expr exp, res;
+  expr exp;
   int err;
 
   buffer = read_file(fname);
   p = buffer;
   for (; *p != '\0';)
   {
-    exp = parse_exp(&p, &err);
+    exp = parse_exp(ev->machine, &p, &err);
     if (err == PERR_FIN)
       break;
 
@@ -61,16 +61,7 @@ int evaluate_file(const char *fname)
 
     push(exp);
 
-    // printf("Parsed: ");
-    // print_exp(exp);
-    // printf("\n");
-    // fflush(stdout);
-
-    res = eval(exp);
-
-    //    printf("Evaluated: ");
-    //    print_exp(exp);
-    //    printf("\n");
+    eval(ev, exp);
 
     pop(exp);
   }
@@ -96,68 +87,27 @@ expr prim_say_hello(expr args)
   return mk_num(1);
 }
 
-void test_lookup_name()
-{
-  expr *calc;
-  expr res, cmd;
-
-  calc = lookup_name("lj-potential");
-  if (calc != NULL && is_procedure((*calc)))
-  {
-    cmd = list(mk_sym("lj-potential"), mk_num(4), NIL);
-    res = eval(cmd);
-    if (is_num(res))
-      printf("lj-potential(4) = %ld\n", res.longv);
-  }
-}
-
 int main(int argc, const char *argv[])
 {
-  if (!lisper_init())
+  struct evaluator *ev;
+
+  ev = evaluator_create();
+  if (!ev)
   {
     error("Cannot initialize Lisper");
     exit(1);
   }
-
-  add_primitives(list(mk_sym("say-hello")),
-                 list(mk_prim(prim_say_hello)));
+  info("Lisper initialized");
+  add_primitives(ev->machine, list(ev->machine, mk_sym("say-hello")),
+                 list(ev->machine, mk_prim(prim_say_hello)));
 
   if (argc > 1)
   {
-    evaluate_file(argv[1]);
-    // test_lookup_name();
+    evaluate_file(ev, argv[1]);
   }
   else
-    repl(argc, argv);
+    repl(ev, argc, argv);
 
-  return 0;
-}
-
-int main3(int argc, const char *argv[])
-{
-  if (!lisper_init())
-  {
-    error("Cannot initialize Lisper");
-    exit(1);
-  }
-
-  if (argc > 1)
-    return evaluate_file(argv[1]);
-  else
-    repl(argc, argv);
-
-  return 0;
-}
-int main2(int argc, const char *argv[])
-{
-  const char *fname = "/Users/ayaz/Dropbox/Sources/Lisper/examples/test2.sc";
-  int error;
-  expr e;
-  lisper_init();
-  char *script = read_file(fname);
-  char *p = script;
-  e = parse_exp(&p, &error);
-  print_exp(e);
-  free(script);
+  evaluator_destroy(ev);
   return 0;
 }

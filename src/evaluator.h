@@ -13,12 +13,22 @@
 
 #include <string.h>
 
-typedef expr (*primitive_f)(expr);
-extern expr *__registers[];
+struct evaluator
+{
+  struct machine *machine;
+  struct memory *memory;
+  void *goto_fn;
+};
 
-int lisper_init(void);
-void add_primitives(expr names, expr funcs);
-expr *lookup_name(const char *name);
+typedef void (*cont_f)(struct evaluator *);
+typedef expr (*primitive_f)(struct machine *, expr);
+
+struct evaluator *evaluator_create();
+void evaluator_destroy(struct evaluator *ev);
+expr eval(struct evaluator *ev, expr exp);
+
+void add_primitives(struct machine *m, expr names, expr funcs);
+expr *lookup_name(struct machine *m, const char *name);
 
 #define is_tagged(e, tag) \
   !is_nil(e) && is_pair(e) && is_sym(car(e)) && !strcasecmp(car(e).str, tag)
@@ -32,8 +42,8 @@ expr *lookup_name(const char *name);
 
 // Lambda
 #define is_lambda(e) is_tagged(e, "lambda")
-#define make_lambda(params, body) \
-  cons(mk_sym("lambda"), cons(params, body))
+#define make_lambda(m, params, body) \
+  cons(m, mk_sym("lambda"), cons(m, params, body))
 #define lambda_params(e) cadr(e)
 #define lambda_body(e) cddr(e)
 
@@ -45,14 +55,14 @@ expr *lookup_name(const char *name);
 
 // Quote
 #define is_quote(e) is_tagged(e, "quote")
-#define make_quote(e) \
-  cons(mk_sym("quote"), cons(e, NIL))
+#define make_quote(m, e) \
+  cons(m, mk_sym("quote"), cons(m, e, NIL))
 #define quote_text(e) cadr(e)
 
 // Procedure
 #define is_procedure(e) is_tagged(e, "procedure")
-#define make_procedure(params, body, env) \
-  listn(4, mk_sym("procedure"), params, body, env)
+#define make_procedure(machine, params, body, env) \
+  listn(machine, 4, mk_sym("procedure"), params, body, env)
 #define procedure_params(p) cadr(p)
 #define procedure_body(p) caddr(p)
 #define procedure_env(p) car(cdddr(p))
@@ -76,7 +86,7 @@ expr *lookup_name(const char *name);
 #define definition_variable(e) \
   ((is_sym(cadr(e))) ? cadr(e) : caadr(e))
 
-#define definition_value(e) ( \
-    (is_sym(cadr(e))) ? caddr(e) : make_lambda(cdadr(e), cddr(e)))
+#define definition_value(m, e) ( \
+    (is_sym(cadr(e))) ? caddr(e) : make_lambda(m, cdadr(e), cddr(e)))
 
 #endif /* evaluator_h */

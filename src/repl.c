@@ -10,25 +10,26 @@
 #include "reader.h"
 #include "printer.h"
 #include "evaluator.h"
+#include "logger.h"
+#include "machine.h"
 
 #include <stdio.h>
 
 #define MAX_LINE_SIZE 1024
 
 #if 0
-  #define COLOR_CONSOLE
-  #define COLOR_INPUT
-  #define COLOR_OUTPUT
-  #undef COLOR_RESET
-  #define COLOR_RESET
+#define COLOR_CONSOLE
+#define COLOR_INPUT
+#define COLOR_OUTPUT
+#undef COLOR_RESET
+#define COLOR_RESET
 #else
-  #define COLOR_CONSOLE COLOR_YELLOW
-  #define COLOR_INPUT COLOR_MAGENTA
-  #define COLOR_OUTPUT COLOR_GREEN
+#define COLOR_CONSOLE COLOR_YELLOW
+#define COLOR_INPUT COLOR_MAGENTA
+#define COLOR_OUTPUT COLOR_GREEN
 #endif
 
-// You must call lisper_init() first!
-void repl(int argc, const char *argv[])
+void repl(struct evaluator *ev, int argc, const char *argv[])
 {
   char buffer[MAX_LINE_SIZE], *s;
   char stop;
@@ -45,11 +46,11 @@ void repl(int argc, const char *argv[])
     s = &buffer[0];
     while (*s != '\0')
     {
-      exp = parse_exp(&s, &error);
+      exp = parse_exp(ev->machine, &s, &error);
       if (error)
         break;
       push(exp);
-      exp = eval(exp);
+      exp = eval(ev, exp);
 
       fprintf(stdout, COLOR_OUTPUT "");
       print_exp(exp);

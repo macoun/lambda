@@ -11,9 +11,8 @@
 
 extern int is_equal(expr a, expr b);
 
-static expr make_frame(expr vars, expr vals);
-
-static void frame_bind(expr frame, expr var, expr val);
+static expr make_frame(struct machine *m, expr vars, expr vals);
+static void frame_bind(struct machine *m, expr frame, expr var, expr val);
 static expr frame_vars(expr frame);
 static expr frame_vals(expr frame);
 
@@ -54,17 +53,17 @@ expr *env_lookup(expr var, expr env)
   return NULL;
 }
 
-expr env_extend(expr vars, expr vals, expr env)
+expr env_extend(struct machine *m, expr vars, expr vals, expr env)
 {
   expr frame;
 
-  push(env);
-  frame = make_frame(vars, vals);
-  pop(env);
-  return cons(frame, env);
+  machine_push(m, env);
+  frame = make_frame(m, vars, vals);
+  machine_pop(m, &env);
+  return cons(m, frame, env);
 }
 
-expr env_define_variable(expr var, expr val, expr env)
+expr env_define_variable(struct machine *m, expr var, expr val, expr env)
 {
   expr frame;
   expr *res;
@@ -74,7 +73,7 @@ expr env_define_variable(expr var, expr val, expr env)
   if (res != NULL)
     res[0] = val;
   else
-    frame_bind(frame, var, val);
+    frame_bind(m, frame, var, val);
 
   return mk_num(1);
 }
@@ -90,9 +89,9 @@ expr env_parent(expr env)
 }
 
 // Frame
-expr make_frame(expr vars, expr vals)
+expr make_frame(struct machine *m, expr vars, expr vals)
 {
-  return cons(vars, vals);
+  return cons(m, vars, vals);
 }
 
 expr frame_vars(expr frame)
@@ -126,21 +125,21 @@ expr *frame_lookup(expr frame, expr var)
   return NULL;
 }
 
-static void frame_bind(expr frame, expr var, expr val)
+static void frame_bind(struct machine *m, expr frame, expr var, expr val)
 {
   expr exp;
 
-  push(val);
-  push(frame);
-  exp = cons(var, car(frame));
-  pop(frame);
-  pop(val);
+  machine_push(m, val);
+  machine_push(m, frame);
+  exp = cons(m, var, car(frame));
+  machine_pop(m, &frame);
+  machine_pop(m, &val);
 
   set_car(frame, exp);
 
-  push(frame);
-  exp = cons(val, cdr(frame));
-  pop(frame);
+  machine_push(m, frame);
+  exp = cons(m, val, cdr(frame));
+  machine_pop(m, &frame);
 
   set_cdr(frame, exp);
 }

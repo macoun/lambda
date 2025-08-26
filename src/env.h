@@ -10,13 +10,14 @@
 #define env_h
 
 #include "exp.h"
+#include "machine.h"
 
 expr *env_lookup(expr var, expr env);
 expr *frame_lookup(expr frame, expr var);
 
 expr env_parent(expr env);
 expr env_frame(expr env);
-expr env_extend(expr vars, expr vals, expr env);
-expr env_define_variable(expr var, expr val, expr env);
+expr env_extend(struct machine *m, expr vars, expr vals, expr env);
+expr env_define_variable(struct machine *m, expr var, expr val, expr env);
 
 #endif /* env_h */

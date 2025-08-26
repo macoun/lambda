@@ -12,35 +12,35 @@
 #include <stdarg.h>
 #include <assert.h>
 
-expr cons(expr a, expr b)
+expr cons(struct machine *m, expr a, expr b)
 {
   expr pair;
-  
+
   pair.type = PAIR;
-  push(a);
-  push(b);
-  pair.array = mem_new(2);
-  pop(b);
-  pop(a);
-  
+  machine_push(m, a);
+  machine_push(m, b);
+  pair.array = memory_alloc(m->memory, 2, MEMSPACE_ACTIVE);
+  machine_pop(m, &b);
+  machine_pop(m, &a);
+
   pair.array[0] = a;
   pair.array[1] = b;
   return pair;
 }
 
-expr list(expr first, ...)
+expr list(struct machine *m, expr first, ...)
 {
   va_list ap;
   expr head, tail, cur;
-  
-  head = cons(first, NIL);
+
+  head = cons(m, first, NIL);
   tail = head;
-  
+
   va_start(ap, first);
   for (cur = va_arg(ap, expr); !is_nil(cur);
        cur = va_arg(ap, expr))
   {
-    set_cdr(tail, cons(cur, NIL));
+    set_cdr(tail, cons(m, cur, NIL));
     tail = cdr(tail);
   }
   va_end(ap);
@@ -48,27 +48,27 @@ expr list(expr first, ...)
   return head;
 }
 
-expr listn(int n, ...)
+expr listn(struct machine *m, int n, ...)
 {
   int i;
   expr l = NIL, cur;
-  
+
   va_list ap;
-  
+
   va_start(ap, n);
   for (i = 0; i < n; i++)
   {
     cur = va_arg(ap, expr);
-    push(cur);
+    machine_push(m, cur);
   }
   va_end(ap);
-  
+
   for (i = 0; i < n; i++)
   {
-    pop(cur);
-    l = cons(cur, l);
+    machine_pop(m, &cur);
+    l = cons(m, cur, l);
   }
-  
+
   return l;
 }
 
@@ -87,7 +87,7 @@ int is_list(expr e)
 long list_length(expr l)
 {
   long len;
-  
+
   len = 0;
   while (is_pair(l))
   {
@@ -97,33 +97,32 @@ long list_length(expr l)
   return len;
 }
 
-expr list_append(expr l, expr e)
+expr list_append(struct machine *m, expr l, expr e)
 {
   expr tmp, tail;
-  
+
   if (is_nil(l))
-    return cons(e, NIL);
-  
-  push(l);
-  tmp = cons(e, NIL);
-  pop(l);
+    return cons(m, e, NIL);
+
+  machine_push(m, l);
+  tmp = cons(m, e, NIL);
+  machine_pop(m, &l);
   tail = list_tail(l);
   set_cdr(tail, tmp);
   return l;
 }
 
-expr vector(long length, expr *exps)
+expr vector(struct machine *m, long length, expr *exps)
 {
   expr vect;
   int i;
-  
+
   vect.type = VECTOR;
-  vect.array = mem_new(length + 1);
+  vect.array = memory_alloc(m->memory, length + 1, MEMSPACE_ACTIVE);
   vect.array[0] = mk_num(length);
-  
+
   for (i = 0; i < length; i++)
     vect.array[i + 1] = exps ? exps[i] : NIL;
-  
+
   return vect;
 }
-

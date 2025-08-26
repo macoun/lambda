@@ -8,8 +8,10 @@
 
 #include "primitives.h"
 #include "printer.h"
+#include "logger.h"
+#include "machine.h"
 
-expr op_add(expr args)
+expr op_add(struct machine *m, expr args)
 {
   expr cur;
   unsigned long sum = 0;
@@ -31,7 +33,7 @@ expr op_add(expr args)
   return mk_num(sum);
 }
 
-expr op_sub(expr args)
+expr op_sub(struct machine *m, expr args)
 {
   expr cur;
   long sub;
@@ -62,7 +64,7 @@ expr op_sub(expr args)
   return mk_num(sub);
 }
 
-expr op_mul(expr args)
+expr op_mul(struct machine *m, expr args)
 {
   expr cur;
   unsigned long prod = 1;
@@ -86,7 +88,7 @@ expr op_mul(expr args)
 
 #pragma mark -
 
-expr op_eq(expr args)
+expr op_eq(struct machine *m, expr args)
 {
   expr ref, cur;
 
@@ -109,7 +111,7 @@ expr op_eq(expr args)
   return mk_num(1);
 }
 
-expr op_gt(expr args)
+expr op_gt(struct machine *m, expr args)
 {
   expr ref, cur;
 
@@ -132,7 +134,7 @@ expr op_gt(expr args)
   return mk_num(1);
 }
 
-expr op_lt(expr args)
+expr op_lt(struct machine *m, expr args)
 {
   expr ref, cur;
 
@@ -157,29 +159,29 @@ expr op_lt(expr args)
 
 #pragma mark -
 
-expr op_car(expr args)
+expr op_car(struct machine *m, expr args)
 {
   return caar(args);
 }
 
-expr op_cdr(expr args)
+expr op_cdr(struct machine *m, expr args)
 {
   return cdar(args);
 }
 
-expr op_cons(expr args)
+expr op_cons(struct machine *m, expr args)
 {
-  return cons(car(args), cadr(args));
+  return cons(m, car(args), cadr(args));
 }
 
-expr op_list(expr args)
+expr op_list(struct machine *m, expr args)
 {
   return args;
 }
 
 #pragma mark -
 
-expr op_print(expr args)
+expr op_print(struct machine *m, expr args)
 {
   expr current;
   for (; !is_nil(args); args = cdr(args))
@@ -195,44 +197,44 @@ expr op_print(expr args)
   return mk_num(12);
 }
 
-expr op_println(expr args)
+expr op_println(struct machine *m, expr args)
 {
-  op_print(args);
+  op_print(m, args);
   printf("\n");
   return mk_num(13);
 }
 
 #pragma mark -
 
-expr op_is_null(expr args)
+expr op_is_null(struct machine *m, expr args)
 {
   long b;
   b = is_nil(car(args)) ? 1 : 0;
   return mk_num(b);
 }
 
-expr op_is_number(expr args)
+expr op_is_number(struct machine *m, expr args)
 {
   long b;
   b = is_num(car(args)) ? 1 : 0;
   return mk_num(b);
 }
 
-expr op_is_string(expr args)
+expr op_is_string(struct machine *m, expr args)
 {
   long b;
   b = is_str(car(args)) ? 1 : 0;
   return mk_num(b);
 }
 
-expr op_is_pair(expr args)
+expr op_is_pair(struct machine *m, expr args)
 {
   long b;
   b = is_pair(car(args)) ? 1 : 0;
   return mk_num(b);
 }
 
-expr op_is_symbol(expr args)
+expr op_is_symbol(struct machine *m, expr args)
 {
   long b;
   b = is_sym(car(args)) ? 1 : 0;
@@ -241,69 +243,68 @@ expr op_is_symbol(expr args)
 
 #pragma mark -
 
-expr op_is_zero(expr args)
+expr op_is_zero(struct machine *m, expr args)
 {
   long b;
   expr arg;
-  
+
   arg = car(args);
   b = (is_num(arg) && arg.intv == 0) ? 1 : 0;
   return mk_num(b);
 }
 
-expr op_is_positive(expr args)
+expr op_is_positive(struct machine *m, expr args)
 {
   long b;
   expr arg;
-  
+
   arg = car(args);
   b = (is_num(arg) && arg.intv > 0) ? 1 : 0;
   return mk_num(b);
 }
 
-expr op_is_negative(expr args)
+expr op_is_negative(struct machine *m, expr args)
 {
   long b;
   expr arg;
-  
+
   arg = car(args);
   b = (is_num(arg) && arg.intv < 0) ? 1 : 0;
   return mk_num(b);
 }
 
-expr op_is_odd(expr args)
+expr op_is_odd(struct machine *m, expr args)
 {
   long b;
   expr arg;
-  
+
   arg = car(args);
   b = (is_num(arg) && abs(arg.intv) % 2 == 1) ? 1 : 0;
   return mk_num(b);
 }
 
-expr op_is_even(expr args)
+expr op_is_even(struct machine *m, expr args)
 {
   long b;
   expr arg;
-  
+
   arg = car(args);
   b = (is_num(arg) && arg.intv % 2 == 0) ? 1 : 0;
   return mk_num(b);
 }
 
-
 #pragma mark -
 
-expr op_vector_create(expr args)
+expr op_vector_create(struct machine *m, expr args)
 {
   long size, i;
   expr exp, vect;
 
   size = list_length(args);
 
-  push(args);
-  vect = vector(size, NULL);
-  pop(args);
+  machine_push(m, args);
+  vect = vector(m, size, NULL);
+  machine_pop(m, &args);
 
   exp = args;
   for (i = 0; i < size; i++)
@@ -315,7 +316,7 @@ expr op_vector_create(expr args)
   return vect;
 }
 
-expr op_vector_size(expr args)
+expr op_vector_size(struct machine *m, expr args)
 {
   expr vect;
 
@@ -328,7 +329,7 @@ expr op_vector_size(expr args)
   return mk_num(vect_size(vect));
 }
 
-expr op_vector_get(expr args)
+expr op_vector_get(struct machine *m, expr args)
 {
   expr vect, idx;
 
@@ -355,7 +356,7 @@ expr op_vector_get(expr args)
   return vect_get(vect, idx.longv);
 }
 
-expr op_vector_set(expr args)
+expr op_vector_set(struct machine *m, expr args)
 {
   expr vect, idx, item;
 
