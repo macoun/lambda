@@ -59,11 +59,11 @@ int evaluate_file(struct evaluator *ev, const char *fname)
       break;
     }
 
-    push(exp);
+    machine_push(ev->machine, exp);
 
     eval(ev, exp);
 
-    pop(exp);
+    machine_pop(ev->machine, &exp);
   }
 
   free(buffer);
@@ -107,6 +107,9 @@ int main(int argc, const char *argv[])
   }
   else
     repl(ev, argc, argv);
+
+  // Print detailed stats
+  memory_print_stats(ev->memory);
 
   evaluator_destroy(ev);
   return 0;

@@ -29,6 +29,19 @@ void array_destroy(struct array *array)
     }
 }
 
+void array_pushn(struct array *col, struct cell *first, long n)
+{
+    if (col->size + n > col->capacity)
+    {
+        fprintf(stderr, "array overflow %ld | %ld | %ld\n", col->size, col->capacity, n);
+        exit(1);
+    }
+    for (long i = 0; i < n; i++)
+    {
+        col->cells[col->size++] = first[i];
+    }
+}
+
 void array_push(struct array *array, struct cell value)
 {
     if (array->size >= array->capacity)

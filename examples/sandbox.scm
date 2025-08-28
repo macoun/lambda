@@ -109,7 +109,7 @@
 (define result (iter 5000 (lambda (i) (+ i (vector-length (make-vector 1))))))
 (define result (iter 5000 (lambda (i) (+ i (vector-length (make-vector 1))))))
 
-(iter 300 (lambda (i) (+ i (iter (- 3000  i) (lambda (i) (+ 3 (vector-length (make-vector 1 2 3 4 5 6 7 8 9 0))))))))
+(iter 3 (lambda (i) (+ i (iter (- 3000  i) (lambda (i) (+ 3 (vector-length (make-vector 1 2 3 4 5 6 7 8 9 0))))))))
 
 (display result)
 (newline)

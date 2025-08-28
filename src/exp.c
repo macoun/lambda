@@ -19,7 +19,7 @@ expr cons(struct machine *m, expr a, expr b)
   pair.type = PAIR;
   machine_push(m, a);
   machine_push(m, b);
-  pair.array = memory_alloc(m->memory, 2, MEMSPACE_ACTIVE);
+  pair.array = memory_alloc(m->memory, 2, true);
   machine_pop(m, &b);
   machine_pop(m, &a);
 
@@ -118,7 +118,7 @@ expr vector(struct machine *m, long length, expr *exps)
   int i;
 
   vect.type = VECTOR;
-  vect.array = memory_alloc(m->memory, length + 1, MEMSPACE_ACTIVE);
+  vect.array = memory_alloc(m->memory, length + 1, true);
   vect.array[0] = mk_num(length);
 
   for (i = 0; i < length; i++)

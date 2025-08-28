@@ -49,14 +49,14 @@ void repl(struct evaluator *ev, int argc, const char *argv[])
       exp = parse_exp(ev->machine, &s, &error);
       if (error)
         break;
-      push(exp);
+      machine_push(ev->machine, exp);
       exp = eval(ev, exp);
 
       fprintf(stdout, COLOR_OUTPUT "");
       print_exp(exp);
       fprintf(stdout, COLOR_RESET "\n");
 
-      pop(exp);
+      machine_pop(ev->machine, &exp);
     }
   }
 }

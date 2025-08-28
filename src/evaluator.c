@@ -37,14 +37,6 @@ enum
   VAL
 };
 
-#define __exp ev->machine->registers->cells[EXP]
-#define __env ev->machine->registers->cells[ENV]
-#define __unev ev->machine->registers->cells[UNEV]
-#define __argl ev->machine->registers->cells[ARGL]
-#define __proc ev->machine->registers->cells[PROC]
-#define __continue ev->machine->registers->cells[CONTINUE]
-#define __val ev->machine->registers->cells[VAL]
-
 static void eval_dispatch(struct evaluator *ev);
 static void ev_appl_did_operator(struct evaluator *ev);
 static void ev_appl_operand_loop(struct evaluator *ev);
@@ -73,6 +65,31 @@ static void compound_apply(struct evaluator *ev);
 
 static expr adjoin_arg(struct machine *m, expr val, expr argl);
 static int primitives_init(struct evaluator *ev);
+
+static inline void push_reg(struct evaluator *m, int reg)
+{
+  machine_push_reg(m->machine, reg);
+}
+
+static inline void pop_reg(struct evaluator *m, int reg)
+{
+  machine_pop_reg(m->machine, reg);
+}
+
+static inline void mov_reg(struct evaluator *m, int srcreg, int destreg)
+{
+  machine_mov_reg(m->machine, srcreg, destreg);
+}
+
+static inline void set_reg(struct evaluator *m, int reg, struct cell val)
+{
+  machine_set_reg(m->machine, reg, val);
+}
+
+static inline struct cell get_reg(struct evaluator *m, int reg)
+{
+  return machine_get_reg(m->machine, reg);
+}
 
 struct evaluator *evaluator_create()
 {
@@ -175,19 +192,19 @@ static int primitives_init(struct evaluator *ev)
                mk_prim(op_println),
                mk_prim(op_println),
                NIL);
-  __env = env_extend(ev->machine, vars, vals, NIL);
+  set_reg(ev, ENV, env_extend(ev->machine, vars, vals, NIL));
 
   return 1;
 }
 
 void add_primitives(struct machine *m, expr names, expr funcs)
 {
-  m->registers->cells[ENV] = env_extend(m, names, funcs, m->registers->cells[ENV]);
+  machine_set_reg(m, ENV, env_extend(m, names, funcs, machine_get_reg(m, ENV)));
 }
 
 expr *lookup_name(struct machine *m, const char *name)
 {
-  return env_lookup(mk_sym(name), m->registers->cells[ENV]);
+  return env_lookup(mk_sym(name), machine_get_reg(m, ENV));
 }
 
 #pragma mark Evaluator
@@ -196,170 +213,186 @@ expr eval(struct evaluator *ev, expr exp)
 {
   expr val;
 
-  __exp = exp;
-  __continue = make_cont(NULL);
+  set_reg(ev, EXP, exp);
+  set_reg(ev, CONTINUE, make_cont(NULL));
   ev->goto_fn = eval_dispatch;
 
   while (ev->goto_fn != NULL)
   {
     ((cont_f)ev->goto_fn)(ev);
   }
-  val = __val;
+  val = get_reg(ev, VAL);
   return val;
 }
 
 static void eval_dispatch(struct evaluator *ev)
 {
+  expr exp;
 
-  if (is_self_eval(__exp))
+  exp = get_reg(ev, EXP);
+  if (is_self_eval(exp))
   {
     ev_self(ev);
   }
-  else if (is_variable(__exp))
+  else if (is_variable(exp))
   {
     ev_variable(ev);
   }
-  else if (is_if(__exp))
+  else if (is_if(exp))
   {
     ev_if(ev);
   }
-  else if (is_quote(__exp))
+  else if (is_quote(exp))
   {
     ev_quote(ev);
   }
-  else if (is_lambda(__exp))
+  else if (is_lambda(exp))
   {
     ev_lambda(ev);
   }
-  else if (is_definition(__exp))
+  else if (is_definition(exp))
   {
     ev_definition(ev);
   }
-  else if (is_begin(__exp))
+  else if (is_begin(exp))
   {
     ev_begin(ev);
   }
   // Check appl as last condition
-  else if (is_application(__exp))
+  else if (is_application(exp))
   {
     ev_application(ev);
   }
   else
   {
-    error("Unknown expression %d", __exp.type);
+    error("Unknown expression %d", exp.type);
     exit(1);
   }
 }
 
 static void ev_self(struct evaluator *ev)
 {
-  __val = __exp;
-  ev->goto_fn = (cont_f)__continue.value;
+  mov_reg(ev, EXP, VAL);
+  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }
 
 static void ev_quote(struct evaluator *ev)
 {
-  __val = quote_text(__exp);
-  ev->goto_fn = (cont_f)__continue.value;
+  expr exp = get_reg(ev, EXP);
+  set_reg(ev, VAL, quote_text(exp));
+  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }
 
 static void ev_variable(struct evaluator *ev)
 {
   expr *p;
-  p = env_lookup(__exp, __env);
+  expr exp, env;
+  exp = get_reg(ev, EXP);
+  env = get_reg(ev, ENV);
+  p = env_lookup(exp, env);
   if (p == NULL)
   {
-    error("Unbound variable %s", __exp.str);
-    __val = NIL;
+    error("Unbound variable %s", exp.str);
+    set_reg(ev, VAL, NIL);
     ev->goto_fn = NULL;
   }
   else
   {
-    __val = *p;
-    ev->goto_fn = (cont_f)__continue.value;
+    set_reg(ev, VAL, *p);
+    ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
   }
 }
 
 static void ev_lambda(struct evaluator *ev)
 {
-  __unev = lambda_params(__exp);
-  __exp = lambda_body(__exp);
-  __val = make_procedure(ev->machine, __unev, __exp, __env);
-  ev->goto_fn = (cont_f)__continue.value;
+  expr exp, unev, env, val;
+  exp = get_reg(ev, EXP);
+  env = get_reg(ev, ENV);
+  unev = lambda_params(exp);
+  exp = lambda_body(exp);
+  val = make_procedure(ev->machine, unev, exp, env);
+
+  set_reg(ev, UNEV, unev);
+  set_reg(ev, EXP, exp);
+  set_reg(ev, VAL, val);
+
+  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }
 
 static void ev_application(struct evaluator *ev)
 {
-  push(__continue);
-  push(__env);
-  __unev = appl_operands(__exp);
-  push(__unev);
-  __exp = appl_operator(__exp);
-  __continue = make_cont(ev_appl_did_operator);
+  push_reg(ev, CONTINUE);
+  push_reg(ev, ENV);
+  set_reg(ev, UNEV, appl_operands(get_reg(ev, EXP)));
+  push_reg(ev, UNEV);
+  set_reg(ev, EXP, appl_operator(get_reg(ev, EXP)));
+  set_reg(ev, CONTINUE, make_cont(ev_appl_did_operator));
   ev->goto_fn = eval_dispatch;
 }
 
 static void ev_appl_did_operator(struct evaluator *ev)
 {
-  pop(__unev);
-  pop(__env);
-  __argl = NIL;
-  __proc = __val;
-  if (is_nil(__unev))
+  pop_reg(ev, UNEV);
+  pop_reg(ev, ENV);
+  set_reg(ev, ARGL, NIL);
+  mov_reg(ev, VAL, PROC);
+  if (is_nil(get_reg(ev, UNEV)))
   {
     ev->goto_fn = apply_dispatch;
   }
   else
   {
     ev->goto_fn = ev_appl_operand_loop;
-    push(__proc);
+    push_reg(ev, PROC);
   }
 }
 
 static void ev_appl_operand_loop(struct evaluator *ev)
 {
-  push(__argl);
-  __exp = operands_first(__unev);
-  if (operands_is_last(__unev))
+  push_reg(ev, ARGL);
+  set_reg(ev, EXP, operands_first(get_reg(ev, UNEV)));
+  if (operands_is_last(get_reg(ev, UNEV)))
   {
     ev->goto_fn = ev_appl_last_arg;
   }
   else
   {
-    push(__env);
-    push(__unev);
-    __continue = make_cont(ev_appl_accum_arg);
+    push_reg(ev, ENV);
+    push_reg(ev, UNEV);
+    set_reg(ev, CONTINUE, make_cont(ev_appl_accum_arg));
     ev->goto_fn = eval_dispatch;
   }
 }
 static void ev_appl_accum_arg(struct evaluator *ev)
 {
-  pop(__unev);
-  pop(__env);
-  pop(__argl);
-  __argl = adjoin_arg(ev->machine, __val, __argl);
-  __unev = operands_rest(__unev);
+  pop_reg(ev, UNEV);
+  pop_reg(ev, ENV);
+  pop_reg(ev, ARGL);
+  set_reg(ev, ARGL, adjoin_arg(ev->machine, get_reg(ev, VAL), get_reg(ev, ARGL)));
+  set_reg(ev, UNEV, operands_rest(get_reg(ev, UNEV)));
+
   ev->goto_fn = ev_appl_operand_loop;
 }
 
 static void ev_appl_last_arg(struct evaluator *ev)
 {
-  __continue = make_cont(ev_appl_accum_last_arg);
+  set_reg(ev, CONTINUE, make_cont(ev_appl_accum_last_arg));
+
   ev->goto_fn = eval_dispatch;
 }
 
 static void ev_appl_accum_last_arg(struct evaluator *ev)
 {
-  pop(__argl);
-  __argl = adjoin_arg(ev->machine, __val, __argl);
-  pop(__proc);
+  pop_reg(ev, ARGL);
+  set_reg(ev, ARGL, adjoin_arg(ev->machine, get_reg(ev, VAL), get_reg(ev, ARGL)));
+  pop_reg(ev, PROC);
   ev->goto_fn = apply_dispatch;
 }
 
 static void ev_begin(struct evaluator *ev)
 {
-  __unev = begin_actions(__exp);
-  push(__continue);
+  set_reg(ev, UNEV, begin_actions(get_reg(ev, EXP)));
+  push_reg(ev, CONTINUE);
   ev->goto_fn = ev_sequence;
 }
 
@@ -369,23 +402,24 @@ static void ev_begin(struct evaluator *ev)
 
 static void ev_sequence(struct evaluator *ev)
 {
-  __exp = car(__unev);     // Next expression
-  if (is_nil(cdr(__unev))) // If last expression
+  set_reg(ev, EXP, car(get_reg(ev, UNEV))); // Next expression
+  if (is_nil(cdr(get_reg(ev, UNEV))))       // If last expression
   {
     ev->goto_fn = ev_sequence_end;
   }
   else
   {
-    push(__unev);
-    push(__env);
-    __continue = make_cont(ev_sequence_cont);
+    push_reg(ev, UNEV);
+    push_reg(ev, ENV);
+    set_reg(ev, CONTINUE, make_cont(ev_sequence_cont));
+
     ev->goto_fn = eval_dispatch;
   }
 }
 
 static void ev_sequence_end(struct evaluator *ev)
 {
-  pop(__continue);
+  pop_reg(ev, CONTINUE);
   ev->goto_fn = eval_dispatch;
 }
 
@@ -393,43 +427,45 @@ static void ev_sequence_end(struct evaluator *ev)
 
 static void ev_sequence(struct evaluator *ev)
 {
-  if (is_nil(__unev)) // If last expression
+  if (is_nil(get_reg(ev, UNEV))) // If last expression
   {
     ev->goto_fn = ev_sequence_end;
   }
   else
   {
-    __exp = car(__unev); // Next expression
-    push(__unev);
-    push(__env);
-    __continue = make_cont(ev_sequence_cont);
+    set_reg(ev, EXP, car(get_reg(ev, UNEV))); // Next expression
+    push_reg(ev, UNEV);
+    push_reg(ev, ENV);
+    set_reg(ev, CONTINUE, make_cont(ev_sequence_cont));
+
     ev->goto_fn = eval_dispatch;
   }
 }
 
 static void ev_sequence_end(struct evaluator *ev)
 {
-  pop(__continue);
-  ev->goto_fn = (cont_f)__continue.value;
+  pop_reg(ev, CONTINUE);
+  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }
 
 #endif
 
 static void ev_sequence_cont(struct evaluator *ev)
 {
-  pop(__env);
-  pop(__unev);
-  __unev = cdr(__unev); // Rest expression
+  pop_reg(ev, ENV);
+  pop_reg(ev, UNEV);
+  set_reg(ev, UNEV, cdr(get_reg(ev, UNEV))); // Rest expression
+
   ev->goto_fn = ev_sequence;
 }
 
 static void apply_dispatch(struct evaluator *ev)
 {
-  if (is_prim(__proc))
+  if (is_prim(get_reg(ev, PROC)))
   {
     ev->goto_fn = primitive_apply;
   }
-  else if (is_procedure(__proc))
+  else if (is_procedure(get_reg(ev, PROC)))
   {
     ev->goto_fn = compound_apply;
   }
@@ -442,58 +478,63 @@ static void apply_dispatch(struct evaluator *ev)
 
 static void primitive_apply(struct evaluator *ev)
 {
-  __val = ((primitive_f)__proc.value)(ev->machine, __argl);
-  pop(__continue);
-  ev->goto_fn = (cont_f)__continue.value;
+  primitive_f fn = (primitive_f)get_reg(ev, PROC).value;
+  expr val = fn(ev->machine, get_reg(ev, ARGL));
+  set_reg(ev, VAL, val);
+  pop_reg(ev, CONTINUE);
+  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }
 
 static void compound_apply(struct evaluator *ev)
 {
-  __unev = procedure_params(__proc);
-  __env = procedure_env(__proc);
-  __env = env_extend(ev->machine, __unev, __argl, __env);
-  __unev = procedure_body(__proc);
+  set_reg(ev, UNEV, procedure_params(get_reg(ev, PROC)));
+  set_reg(ev, ENV, procedure_env(get_reg(ev, PROC)));
+  set_reg(ev, ENV, env_extend(ev->machine, get_reg(ev, UNEV), get_reg(ev, ARGL), get_reg(ev, ENV)));
+  set_reg(ev, UNEV, procedure_body(get_reg(ev, PROC)));
+
   ev->goto_fn = ev_sequence;
 }
 
 static void ev_definition(struct evaluator *ev)
 {
-  __unev = definition_variable(__exp);
-  push(__unev);
-  __exp = definition_value(ev->machine, __exp);
-  push(__env);
-  push(__continue);
-  __continue = make_cont(ev_definition_cont);
+  set_reg(ev, UNEV, definition_variable(get_reg(ev, EXP)));
+  push_reg(ev, UNEV);
+  set_reg(ev, EXP, definition_value(ev->machine, get_reg(ev, EXP)));
+  push_reg(ev, ENV);
+  push_reg(ev, CONTINUE);
+  set_reg(ev, CONTINUE, make_cont(ev_definition_cont));
+
   ev->goto_fn = eval_dispatch;
 }
 
 static void ev_definition_cont(struct evaluator *ev)
 {
-  pop(__continue);
-  pop(__env);
-  pop(__unev);
-  env_define_variable(ev->machine, __unev, __val, __env);
-  __val = mk_num(1);
-  ev->goto_fn = (cont_f)__continue.value;
+  pop_reg(ev, CONTINUE);
+  pop_reg(ev, ENV);
+  pop_reg(ev, UNEV);
+  env_define_variable(ev->machine, get_reg(ev, UNEV), get_reg(ev, VAL), get_reg(ev, ENV));
+  set_reg(ev, VAL, mk_num(1));
+  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }
 
 static void ev_if(struct evaluator *ev)
 {
-  push(__exp);
-  push(__env);
-  push(__continue);
-  __continue = make_cont(ev_if_decide);
-  __exp = if_predicate(__exp);
+  push_reg(ev, EXP);
+  push_reg(ev, ENV);
+  push_reg(ev, CONTINUE);
+  set_reg(ev, CONTINUE, make_cont(ev_if_decide));
+  set_reg(ev, EXP, if_predicate(get_reg(ev, EXP)));
+
   ev->goto_fn = eval_dispatch;
 }
 
 static void ev_if_decide(struct evaluator *ev)
 {
-  pop(__continue);
-  pop(__env);
-  pop(__exp);
+  pop_reg(ev, CONTINUE);
+  pop_reg(ev, ENV);
+  pop_reg(ev, EXP);
 
-  if (__val.intv != 0)
+  if (get_reg(ev, VAL).intv != 0)
     ev->goto_fn = ev_if_consequent;
   else
     ev->goto_fn = ev_if_alternative;
@@ -501,13 +542,13 @@ static void ev_if_decide(struct evaluator *ev)
 
 static void ev_if_alternative(struct evaluator *ev)
 {
-  __exp = if_alternative(__exp);
+  set_reg(ev, EXP, if_alternative(get_reg(ev, EXP)));
   ev->goto_fn = eval_dispatch;
 }
 
 static void ev_if_consequent(struct evaluator *ev)
 {
-  __exp = if_consequent(__exp);
+  set_reg(ev, EXP, if_consequent(get_reg(ev, EXP)));
   ev->goto_fn = eval_dispatch;
 }
 

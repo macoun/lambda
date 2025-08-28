@@ -29,6 +29,17 @@ struct segment *segment_create(long size)
     return seg;
 }
 
+void segment_destroy_all(struct segment *seg)
+{
+    struct segment *next;
+    while (seg)
+    {
+        next = seg->next;
+        segment_destroy(seg);
+        seg = next;
+    }
+}
+
 void segment_destroy(struct segment *seg)
 {
     if (seg)
@@ -56,5 +67,19 @@ void segment_reset(struct segment *seg)
     {
         seg->data->size = 0;
         seg->idle_count = 0;
+        seg->recycle_count++;
     }
+}
+/**
+ * Count the number of segments in a chain
+ */
+long segment_count_segments(struct segment *seg)
+{
+    long count = 0;
+    while (seg)
+    {
+        count++;
+        seg = seg->next;
+    }
+    return count;
 }

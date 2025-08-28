@@ -32,13 +32,14 @@ struct cell
 extern const struct cell NIL;
 
 #define is_nil(e) (e.type == 0 && e.array == NULL)
-#define is_pair(e) (e.type == PAIR)
-#define is_sym(e) (e.type == SYMBOL)
-#define is_str(e) (e.type == STRING)
-#define is_num(e) (e.type == INTEGER || e.type == FLOAT)
-#define is_prim(e) (e.type == PRIMITIVE)
-#define is_custom(e) (e.type == CUSTOM)
-#define is_vector(e) (e.type == VECTOR)
+#define is_pair(e) ((e).type == PAIR)
+#define is_sym(e) ((e).type == SYMBOL)
+#define is_str(e) ((e).type == STRING)
+#define is_num(e) ((e).type == INTEGER || (e).type == FLOAT)
+#define is_prim(e) ((e).type == PRIMITIVE)
+#define is_custom(e) ((e).type == CUSTOM)
+#define is_vector(e) ((e).type == VECTOR)
+#define is_compound(e) (is_pair(e) || is_vector(e))
 
 #define is_eq(a, b) (a->value == b.value)
 
@@ -48,7 +49,7 @@ extern const struct cell NIL;
 #define mk_sym(str) mk_cell(SYMBOL, strdup(str))
 #define mk_prim(func) mk_cell(PRIMITIVE, func)
 
-#define has_moved(e) (e.type == MOVED)
+#define has_moved(e) ((e).type == MOVED)
 
 #define vect_set(vect, idx, item)       \
     do                                  \

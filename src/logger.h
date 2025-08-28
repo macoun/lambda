@@ -21,5 +21,6 @@
 
 #define error(...) eprintf(COLOR_RED, __VA_ARGS__)
 #define info(...) eprintf(COLOR_GREEN, __VA_ARGS__)
+#define debug(...) eprintf(COLOR_CYAN, __VA_ARGS__)
 
 #endif /* logger_h */

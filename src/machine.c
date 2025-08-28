@@ -41,12 +41,37 @@ void machine_destroy(struct machine *m)
 /*-----------------------------------------------------------------------*/
 /* Stack management                                                      */
 /*-----------------------------------------------------------------------*/
-void machine_push(struct machine *m, struct cell value)
+inline void machine_push(struct machine *m, struct cell value)
 {
     array_push(m->stack, value);
 }
 
-void machine_pop(struct machine *m, struct cell *value)
+inline void machine_pop(struct machine *m, struct cell *value)
 {
     *value = array_pop(m->stack);
+}
+
+inline void machine_push_reg(struct machine *m, int reg)
+{
+    machine_push(m, m->registers->cells[reg]);
+}
+
+inline void machine_pop_reg(struct machine *m, int reg)
+{
+    machine_pop(m, &m->registers->cells[reg]);
+}
+
+inline void machine_mov_reg(struct machine *m, int srcreg, int destreg)
+{
+    m->registers->cells[destreg] = m->registers->cells[srcreg];
+}
+
+inline void machine_set_reg(struct machine *m, int reg, struct cell val)
+{
+    m->registers->cells[reg] = val;
+}
+
+inline struct cell machine_get_reg(struct machine *m, int reg)
+{
+    return m->registers->cells[reg];
 }

@@ -17,6 +17,7 @@ void array_destroy(struct array *col);
 
 // Operations
 void array_push(struct array *col, struct cell value);
+void array_pushn(struct array *col, struct cell *first, long n);
 struct cell array_pop(struct array *col);
 struct cell *array_peek(struct array *col, int depth);
 size_t array_size(const struct array *col);
