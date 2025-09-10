@@ -45,4 +45,6 @@ expr op_vector_size(struct machine *m, expr args);
 expr op_vector_get(struct machine *m, expr args);
 expr op_vector_set(struct machine *m, expr args);
 
+expr primitives_env(struct machine *ev);
+
 #endif /* primitives_h */

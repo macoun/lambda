@@ -20,6 +20,17 @@ struct evaluator
   void *goto_fn;
 };
 
+enum
+{
+  EXP,
+  ENV,
+  UNEV,
+  ARGL,
+  PROC,
+  CONTINUE,
+  VAL
+};
+
 typedef void (*cont_f)(struct evaluator *);
 typedef expr (*primitive_f)(struct machine *, expr);
 
@@ -28,7 +39,8 @@ void evaluator_destroy(struct evaluator *ev);
 expr eval(struct evaluator *ev, expr exp);
 
 void add_primitives(struct machine *m, expr names, expr funcs);
-expr *lookup_name(struct machine *m, const char *name);
+
+#define make_cont(f) mk_cell(CUSTOM, f)
 
 #define is_tagged(e, tag) \
   !is_nil(e) && is_pair(e) && is_sym(car(e)) && !strcasecmp(car(e).str, tag)
@@ -59,6 +71,18 @@ expr *lookup_name(struct machine *m, const char *name);
   cons(m, mk_sym("quote"), cons(m, e, NIL))
 #define quote_text(e) cadr(e)
 
+// Quasiquote
+#define is_quasiquote(e) is_tagged(e, "quasiquote")
+#define quasiquote_text(e) cadr(e)
+
+// Unquote
+#define is_unquote(e) is_tagged(e, "unquote")
+#define unquote_text(e) cadr(e)
+
+// Unquote splicing
+#define is_unquote_splicing(e) is_tagged(e, "unquote-splicing")
+#define unquote_splicing_text(e) cadr(e)
+
 // Procedure
 #define is_procedure(e) is_tagged(e, "procedure")
 #define make_procedure(machine, params, body, env) \
@@ -66,6 +90,44 @@ expr *lookup_name(struct machine *m, const char *name);
 #define procedure_params(p) cadr(p)
 #define procedure_body(p) caddr(p)
 #define procedure_env(p) car(cdddr(p))
+
+// Macro definition
+#define is_macro_definition(e) is_tagged(e, "define-macro")
+#define is_macro(e) is_tagged(e, "macro")
+#define make_macro(machine, pattern, template, env) \
+  listn(machine, 4, mk_sym("macro"), pattern, template, env)
+#define macro_pattern(p) cadr(p)
+#define macro_template(p) caddr(p)
+#define macro_env(p) car(cdddr(p))
+
+// Define Syntax macros
+#define is_define_syntax(e) is_tagged(e, "define-syntax")
+#define define_syntax_name(e) cadr(e)
+#define define_syntax_rules(e) caddr(e)
+
+#define is_syntax_rules(e) is_tagged(e, "syntax-rules")
+#define syntax_rules_literals(e) cadr(e)
+#define syntax_rules_patterns(e) cddr(e)
+
+#define is_syntax_pattern(e) is_pair(e) && is_pair(cdr(e))
+#define syntax_pattern(e) car(e)
+#define syntax_template(e) cadr(e)
+
+// Syntax transformers
+#define is_syntax_transformer(e) is_tagged((e), "syntax-transformer")
+#define make_syntax_transformer(m, literals, patterns) \
+  listn(m, 3, mk_sym("syntax-transformer"), literals, patterns)
+#define syntax_transformer_literals(e) cadr(e)
+#define syntax_transformer_patterns(e) caddr(e)
+
+// Ellipsis
+#define mk_ellipsis() mk_sym("...")
+#define is_ellipsis(e) (is_sym(e) && !strcasecmp(e.str, "..."))
+#define is_ellipsis_pattern(e) (is_pair(e) && is_ellipsis(cadr(e)))
+
+// Underscore
+#define mk_underscore() mk_sym("_")
+#define is_underscore(e) (is_sym(e) && !strcasecmp(e.str, "_"))
 
 // Application
 #define is_application(e) is_pair(e)
@@ -88,5 +150,12 @@ expr *lookup_name(struct machine *m, const char *name);
 
 #define definition_value(m, e) ( \
     (is_sym(cadr(e))) ? caddr(e) : make_lambda(m, cdadr(e), cddr(e)))
+
+// Evaluator developers only
+void push_reg(struct evaluator *m, int reg);
+void pop_reg(struct evaluator *m, int reg);
+void mov_reg(struct evaluator *m, int srcreg, int destreg);
+void set_reg(struct evaluator *m, int reg, struct cell val);
+struct cell get_reg(struct evaluator *m, int reg);
 
 #endif /* evaluator_h */

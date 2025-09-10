@@ -34,6 +34,7 @@ struct memory
   struct segment *freesegs;
   struct segment *roots;
 
+  bool gc_enabled;
   long created_segment_count;
   struct gc_stats *gc_stats;
 };
@@ -60,6 +61,7 @@ struct array *memory_alloc_root(struct memory *mem, long s);
 void memory_scan(struct memory *mem, memory_callback_f callback, enum memspace space);
 void memory_flip(struct memory *mem);
 long memory_active_object_count(struct memory *mem);
+void memory_enable_gc(struct memory *mem, bool enable);
 
 // GC statistics functions
 void memory_print_stats(struct memory *mem);

@@ -8,9 +8,39 @@
 
 #include "exp.h"
 #include "mem.h"
+#include "logger.h"
+#include "printer.h"
 
 #include <stdarg.h>
+#include <string.h>
 #include <assert.h>
+
+bool is_eq(expr a, expr b)
+{
+  if (a.type == b.type)
+  {
+    if (is_sym(a))
+      return (!strcmp(a.str, b.str));
+    return a.value == b.value;
+  }
+  return false;
+}
+
+bool is_equal(expr a, expr b)
+{
+  if (a.type == b.type)
+  {
+    if (is_num(a))
+    {
+      return (a.ulongv == b.ulongv);
+    }
+    else if (is_sym(a) || is_str(a))
+    {
+      return !strcmp(a.str, b.str);
+    }
+  }
+  return 0;
+}
 
 expr cons(struct machine *m, expr a, expr b)
 {
@@ -72,6 +102,29 @@ expr listn(struct machine *m, int n, ...)
   return l;
 }
 
+expr memq(expr memb, expr lst)
+{
+  while (is_pair(lst))
+  {
+    if (is_eq(memb, car(lst)))
+      return lst;
+    lst = cdr(lst);
+  }
+  return FALSE;
+}
+
+expr assoq(expr key, expr alist)
+{
+  while (is_pair(alist))
+  {
+    expr pair = car(alist);
+    if (is_pair(pair) && is_eq(key, car(pair)))
+      return pair;
+    alist = cdr(alist);
+  }
+  return FALSE;
+}
+
 expr list_tail(expr l)
 {
   while (is_pair(l) && is_pair(cdr(l)))
@@ -97,19 +150,77 @@ long list_length(expr l)
   return len;
 }
 
+expr list_append_x(struct machine *m, expr l, expr e)
+{
+  expr tail;
+
+  if (is_nil(l))
+    return e;
+
+  tail = list_tail(l);
+  set_cdr(tail, e);
+  return l;
+}
+
 expr list_append(struct machine *m, expr l, expr e)
 {
   expr tmp, tail;
 
   if (is_nil(l))
-    return cons(m, e, NIL);
+    return e;
 
-  machine_push(m, l);
-  tmp = cons(m, e, NIL);
-  machine_pop(m, &l);
-  tail = list_tail(l);
-  set_cdr(tail, tmp);
-  return l;
+  tmp = NIL;
+  while (!is_nil(l))
+  {
+    tmp = cons(m, car(l), tmp);
+    l = cdr(l);
+  }
+  while (!is_nil(e))
+  {
+    tmp = cons(m, car(e), tmp);
+    e = cdr(e);
+  }
+  expr reversed = list_reverse(m, tmp);
+  return reversed;
+}
+
+expr list_ref(expr l, expr n)
+{
+  long idx;
+
+  if (!is_num(n) || n.longv < 0)
+  {
+    error("Invalid index");
+    return NIL;
+  }
+
+  idx = n.longv;
+  while (is_pair(l) && idx > 0)
+  {
+    l = cdr(l);
+    idx--;
+  }
+
+  if (idx == 0 && is_pair(l))
+    return car(l);
+
+  error("Index out of bounds");
+  return NIL;
+}
+
+// Reverse a list, preserving the original list
+expr list_reverse(struct machine *m, expr lst)
+{
+  expr result = NIL;
+  expr current = lst;
+
+  while (!is_nil(current))
+  {
+    result = cons(m, car(current), result);
+    current = cdr(current);
+  }
+
+  return result;
 }
 
 expr vector(struct machine *m, long length, expr *exps)

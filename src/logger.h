@@ -9,6 +9,7 @@
 #define COLOR_BLUE "\x1b[34m"
 #define COLOR_MAGENTA "\x1b[35m"
 #define COLOR_CYAN "\x1b[36m"
+#define COLOR_BRIGHT_WHITE "\x1b[97m"
 #define COLOR_RESET "\x1b[0m"
 
 #if COLORED
@@ -22,5 +23,13 @@
 #define error(...) eprintf(COLOR_RED, __VA_ARGS__)
 #define info(...) eprintf(COLOR_GREEN, __VA_ARGS__)
 #define debug(...) eprintf(COLOR_CYAN, __VA_ARGS__)
+#define warn(...) eprintf(COLOR_YELLOW, __VA_ARGS__)
+#define logexpr(s, exp)  \
+    do                   \
+    {                    \
+        info("%s: ", s); \
+        print_exp(exp);  \
+        printf("\n");    \
+    } while (0)
 
 #endif /* logger_h */

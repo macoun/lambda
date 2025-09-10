@@ -23,9 +23,11 @@
 /*-----------------------------------------------------------------------*/
 
 const struct cell NIL = mk_cell(0, NULL);
+static const bool _false = false;
+const struct cell FALSE = mk_cell(CUSTOM, &_false);
 
 // Configuration constants
-#define DEFAULT_SEGMENT_SIZE 124 * 1
+#define DEFAULT_SEGMENT_SIZE 108 * 5
 #define SEGMENT_MAX_IDLE_COUNT 2
 
 /*-----------------------------------------------------------------------*/
@@ -202,6 +204,7 @@ struct memory *memory_create(void)
   struct memory *mem = calloc(1, sizeof(struct memory));
   if (!mem)
   {
+    mem->gc_enabled = true;
     error("Failed to allocate memory manager");
     return NULL;
   }
@@ -477,6 +480,24 @@ long memory_active_object_count(struct memory *mem)
   return mem ? segment_count_active_objects(mem->segments) : 0;
 }
 
+void memory_enable_gc(struct memory *mem, bool enable)
+{
+  if (!mem)
+  {
+    return;
+  }
+  mem->gc_enabled = enable;
+  if (enable)
+  {
+    info("Garbage collection enabled");
+    gc(mem);
+  }
+  else
+  {
+    info("Garbage collection disabled");
+  }
+}
+
 // Get current time in milliseconds
 static inline clock_t get_time_ms()
 {
@@ -488,6 +509,12 @@ static void mem_run_gc(struct memory *mem)
   long before, after;
   clock_t start_time, end_time;
   clock_t duration;
+
+  if (!mem || !mem->gc_enabled)
+  {
+    info("Garbage collection disabled. Skipping GC.");
+    return;
+  }
 
   // Record pre-GC metrics
   before = memory_active_object_count(mem);

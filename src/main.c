@@ -14,6 +14,7 @@
 #include "logger.h"
 #include "machine.h"
 #include "repl.h"
+#include "macros.h"
 
 char *read_file(const char *fname)
 {
@@ -39,34 +40,67 @@ char *read_file(const char *fname)
   return buffer;
 }
 
-int evaluate_file(struct evaluator *ev, const char *fname)
+expr read_exp_from_file(struct machine *m, const char *fname)
 {
   char *buffer, *p;
-  expr exp;
+  expr exp, source;
   int err;
 
+  source = NIL;
   buffer = read_file(fname);
   p = buffer;
   for (; *p != '\0';)
   {
-    exp = parse_exp(ev->machine, &p, &err);
+    exp = parse_exp(m, &p, &err);
     if (err == PERR_FIN)
       break;
 
     if (err != 0)
     {
       error("Error: %d\n", err);
+      source = FALSE;
       break;
     }
 
-    machine_push(ev->machine, exp);
+    machine_push(m, exp);
 
-    eval(ev, exp);
+    source = cons(m, exp, source);
 
-    machine_pop(ev->machine, &exp);
+    machine_pop(m, &exp);
   }
 
   free(buffer);
+  if (!is_false(source))
+    source = list_reverse(m, source);
+  return source;
+}
+
+int evaluate_file(struct evaluator *ev, const char *fname)
+{
+  struct machine *m = ev->machine;
+  expr source = read_exp_from_file(m, fname);
+  if (is_false(source))
+    return -1;
+  logexpr("Source", source);
+  memory_enable_gc(m->memory, false);
+  struct macros_expander *expander = macros_create(m);
+  source = macros_collect(expander, source);
+  logexpr("Source (preprocessed)", source);
+  source = macros_expand(expander, source);
+  logexpr("Source (expanded)", source);
+  machine_push(m, source);
+  memory_enable_gc(m->memory, true);
+  machine_pop(m, &source);
+  expr current = source;
+  while (!is_nil(current))
+  {
+    expr exp = car(current);
+    machine_push(m, current);
+    eval(ev, exp);
+    machine_pop(m, &current);
+    current = cdr(current);
+  }
+  macros_destroy(expander);
   return 0;
 }
 
@@ -98,8 +132,8 @@ int main(int argc, const char *argv[])
     exit(1);
   }
   info("Lisper initialized");
-  add_primitives(ev->machine, list(ev->machine, mk_sym("say-hello")),
-                 list(ev->machine, mk_prim(prim_say_hello)));
+  add_primitives(ev->machine, list(ev->machine, mk_sym("say-hello"), NIL),
+                 list(ev->machine, mk_prim(prim_say_hello), NIL));
 
   if (argc > 1)
   {

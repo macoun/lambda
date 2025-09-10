@@ -8,6 +8,7 @@
 
 #include "printer.h"
 #include "evaluator.h"
+#include "logger.h"
 #include <stdio.h>
 
 static void print_list(expr exp)
@@ -59,15 +60,15 @@ void print_exp(expr exp)
 {
   if (is_str(exp))
   {
-    printf("\"%s\"", exp.str);
+    printf(COLOR_YELLOW "\"%s\"" COLOR_RESET, exp.str);
   }
   else if (is_sym(exp))
   {
-    printf("%s", exp.str);
+    printf(COLOR_BRIGHT_WHITE "%s" COLOR_RESET, exp.str);
   }
   else if (is_num(exp))
   {
-    printf("%ld", exp.longv);
+    printf(COLOR_MAGENTA "%ld" COLOR_RESET, exp.longv);
   }
   else if (is_nil(exp))
   {
@@ -76,6 +77,10 @@ void print_exp(expr exp)
   else if (is_prim(exp))
   {
     printf("#<primitive>");
+  }
+  else if (is_false(exp))
+  {
+    printf("#f");
   }
   else if (is_custom(exp))
   {
@@ -112,6 +117,7 @@ void print_exp(expr exp)
   {
     printf("Unknown type: %d\n", exp.type);
   }
+  fflush(stdout);
 }
 /*-----------------------------------------------------------------------*/
 /* Printing and logging                                                  */

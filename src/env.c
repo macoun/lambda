@@ -8,8 +8,8 @@
 
 #include "env.h"
 #include "printer.h"
-
-extern int is_equal(expr a, expr b);
+#include "logger.h"
+#include "evaluator.h"
 
 static expr make_frame(struct machine *m, expr vars, expr vals);
 static void frame_bind(struct machine *m, expr frame, expr var, expr val);
@@ -56,11 +56,22 @@ expr *env_lookup(expr var, expr env)
 expr env_extend(struct machine *m, expr vars, expr vals, expr env)
 {
   expr frame;
-
+  // info("Extending environment vars:");
+  // print_exp(vars);
+  // printf("\n");
+  // info("with vals:");
+  // print_exp(vals);
+  // printf("\n");
+  // fflush(stdout);
   machine_push(m, env);
+  machine_push(m, vars);
+  machine_push(m, vals);
   frame = make_frame(m, vars, vals);
+  expr res = cons(m, frame, env);
+  machine_pop(m, &vals);
+  machine_pop(m, &vars);
   machine_pop(m, &env);
-  return cons(m, frame, env);
+  return res;
 }
 
 expr env_define_variable(struct machine *m, expr var, expr val, expr env)

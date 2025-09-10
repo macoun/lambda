@@ -18,24 +18,10 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <assert.h>
 #include <stdarg.h>
 
 const long DEFAULT_STACK_SIZE = 1024 * 1;
-
-#define make_cont(f) mk_cell(CUSTOM, f)
-
-enum
-{
-  EXP,
-  ENV,
-  UNEV,
-  ARGL,
-  PROC,
-  CONTINUE,
-  VAL
-};
 
 static void eval_dispatch(struct evaluator *ev);
 static void ev_appl_did_operator(struct evaluator *ev);
@@ -59,34 +45,36 @@ static void ev_if_alternative(struct evaluator *ev);
 static void ev_if_consequent(struct evaluator *ev);
 static void ev_if_decide(struct evaluator *ev);
 
+static void ev_define_syntax(struct evaluator *ev);
+static void ev_syntax_transformer(struct evaluator *ev);
+
 static void apply_dispatch(struct evaluator *ev);
 static void primitive_apply(struct evaluator *ev);
 static void compound_apply(struct evaluator *ev);
 
 static expr adjoin_arg(struct machine *m, expr val, expr argl);
-static int primitives_init(struct evaluator *ev);
 
-static inline void push_reg(struct evaluator *m, int reg)
+inline void push_reg(struct evaluator *m, int reg)
 {
   machine_push_reg(m->machine, reg);
 }
 
-static inline void pop_reg(struct evaluator *m, int reg)
+inline void pop_reg(struct evaluator *m, int reg)
 {
   machine_pop_reg(m->machine, reg);
 }
 
-static inline void mov_reg(struct evaluator *m, int srcreg, int destreg)
+inline void mov_reg(struct evaluator *m, int srcreg, int destreg)
 {
   machine_mov_reg(m->machine, srcreg, destreg);
 }
 
-static inline void set_reg(struct evaluator *m, int reg, struct cell val)
+inline void set_reg(struct evaluator *m, int reg, struct cell val)
 {
   machine_set_reg(m->machine, reg, val);
 }
 
-static inline struct cell get_reg(struct evaluator *m, int reg)
+inline struct cell get_reg(struct evaluator *m, int reg)
 {
   return machine_get_reg(m->machine, reg);
 }
@@ -113,7 +101,9 @@ struct evaluator *evaluator_create()
     return NULL;
   }
   fprintf(stdout, "Created machine with stack size %ld\n", DEFAULT_STACK_SIZE);
-  primitives_init(ev);
+
+  set_reg(ev, ENV, primitives_env(ev->machine));
+
   fprintf(stdout, "Initialized evaluator\n");
   return ev;
 }
@@ -128,87 +118,13 @@ void evaluator_destroy(struct evaluator *ev)
   }
 }
 
-#pragma mark Initialization
-
-static int primitives_init(struct evaluator *ev)
-{
-  expr vars, vals;
-
-  vars = listn(ev->machine, 27,
-               mk_sym("+"),
-               mk_sym("*"),
-               mk_sym("-"),
-               mk_sym("eq?"),
-               mk_sym(">"),
-               mk_sym("<"),
-               mk_sym("null?"),
-               mk_sym("number?"),
-               mk_sym("string?"),
-               mk_sym("pair?"),
-               mk_sym("symbol?"),
-               mk_sym("zero?"),
-               mk_sym("positive?"),
-               mk_sym("negative?"),
-               mk_sym("odd?"),
-               mk_sym("even?"),
-               mk_sym("make-vector"),
-               mk_sym("vector-length"),
-               mk_sym("vector-ref"),
-               mk_sym("vector-set!"),
-               mk_sym("car"),
-               mk_sym("cdr"),
-               mk_sym("cons"),
-               mk_sym("list"),
-               mk_sym("display"),
-               mk_sym("newline"),
-               mk_sym("println"),
-               NIL);
-  vals = listn(ev->machine, 27,
-               mk_prim(op_add),
-               mk_prim(op_mul),
-               mk_prim(op_sub),
-               mk_prim(op_eq),
-               mk_prim(op_gt),
-               mk_prim(op_lt),
-               mk_prim(op_is_null),
-               mk_prim(op_is_number),
-               mk_prim(op_is_string),
-               mk_prim(op_is_pair),
-               mk_prim(op_is_symbol),
-               mk_prim(op_is_zero),
-               mk_prim(op_is_positive),
-               mk_prim(op_is_negative),
-               mk_prim(op_is_odd),
-               mk_prim(op_is_even),
-               mk_prim(op_vector_create),
-               mk_prim(op_vector_size),
-               mk_prim(op_vector_get),
-               mk_prim(op_vector_set),
-               mk_prim(op_car),
-               mk_prim(op_cdr),
-               mk_prim(op_cons),
-               mk_prim(op_list),
-               mk_prim(op_print),
-               mk_prim(op_println),
-               mk_prim(op_println),
-               NIL);
-  set_reg(ev, ENV, env_extend(ev->machine, vars, vals, NIL));
-
-  return 1;
-}
-
 void add_primitives(struct machine *m, expr names, expr funcs)
 {
   machine_set_reg(m, ENV, env_extend(m, names, funcs, machine_get_reg(m, ENV)));
 }
 
-expr *lookup_name(struct machine *m, const char *name)
-{
-  return env_lookup(mk_sym(name), machine_get_reg(m, ENV));
-}
-
 #pragma mark Evaluator
-
+void ev_match_pattern(struct evaluator *ev);
 expr eval(struct evaluator *ev, expr exp)
 {
   expr val;
@@ -230,6 +146,7 @@ static void eval_dispatch(struct evaluator *ev)
   expr exp;
 
   exp = get_reg(ev, EXP);
+
   if (is_self_eval(exp))
   {
     ev_self(ev);
@@ -253,6 +170,10 @@ static void eval_dispatch(struct evaluator *ev)
   else if (is_definition(exp))
   {
     ev_definition(ev);
+  }
+  else if (is_define_syntax(exp))
+  {
+    ev_define_syntax(ev);
   }
   else if (is_begin(exp))
   {
@@ -278,21 +199,17 @@ static void ev_self(struct evaluator *ev)
 
 static void ev_quote(struct evaluator *ev)
 {
-  expr exp = get_reg(ev, EXP);
-  set_reg(ev, VAL, quote_text(exp));
+  set_reg(ev, VAL, quote_text(get_reg(ev, EXP)));
   ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }
 
 static void ev_variable(struct evaluator *ev)
 {
   expr *p;
-  expr exp, env;
-  exp = get_reg(ev, EXP);
-  env = get_reg(ev, ENV);
-  p = env_lookup(exp, env);
+  p = env_lookup(get_reg(ev, EXP), get_reg(ev, ENV));
   if (p == NULL)
   {
-    error("Unbound variable %s", exp.str);
+    error("Unbound variable %s", get_reg(ev, EXP).str);
     set_reg(ev, VAL, NIL);
     ev->goto_fn = NULL;
   }
@@ -305,16 +222,9 @@ static void ev_variable(struct evaluator *ev)
 
 static void ev_lambda(struct evaluator *ev)
 {
-  expr exp, unev, env, val;
-  exp = get_reg(ev, EXP);
-  env = get_reg(ev, ENV);
-  unev = lambda_params(exp);
-  exp = lambda_body(exp);
-  val = make_procedure(ev->machine, unev, exp, env);
-
-  set_reg(ev, UNEV, unev);
-  set_reg(ev, EXP, exp);
-  set_reg(ev, VAL, val);
+  set_reg(ev, UNEV, lambda_params(get_reg(ev, EXP)));
+  set_reg(ev, EXP, lambda_body(get_reg(ev, EXP)));
+  set_reg(ev, VAL, make_procedure(ev->machine, get_reg(ev, UNEV), get_reg(ev, EXP), get_reg(ev, ENV)));
 
   ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }
@@ -472,6 +382,8 @@ static void apply_dispatch(struct evaluator *ev)
   else
   {
     error("Unknown procedure");
+    print_exp(get_reg(ev, PROC));
+    printf("\n");
     ev->goto_fn = NULL;
   }
 }
@@ -552,23 +464,47 @@ static void ev_if_consequent(struct evaluator *ev)
   ev->goto_fn = eval_dispatch;
 }
 
-int is_equal(expr a, expr b)
-{
-  if (a.type == b.type)
-  {
-    if (is_num(a))
-    {
-      return (a.ulongv == b.ulongv);
-    }
-    else if (is_sym(a) || is_str(a))
-    {
-      return !strcmp(a.str, b.str);
-    }
-  }
-  return 0;
-}
-
 static expr adjoin_arg(struct machine *m, expr val, expr argl)
 {
-  return list_append(m, argl, val);
+  machine_push(m, argl);
+  expr rest = cons(m, val, NIL);
+  machine_pop(m, &argl);
+  return list_append_x(m, argl, rest);
+}
+
+static void ev_syntax_transformer(struct evaluator *ev)
+{
+  // It's a macro application, we need to expand it first
+  error("Macro expansion not implemented yet");
+  set_reg(ev, VAL, NIL);
+  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
+}
+
+static void ev_define_syntax(struct evaluator *ev)
+{
+  expr name, rules, exp;
+
+  name = define_syntax_name(get_reg(ev, EXP));
+  rules = define_syntax_rules(get_reg(ev, EXP));
+
+  if (!is_syntax_rules(rules))
+  {
+    error("Expected syntax-rules in define-syntax, got: %d", rules.type);
+    set_reg(ev, VAL, NIL);
+    ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
+    return;
+  }
+  // Extract literals and patterns
+  expr literals = syntax_rules_literals(rules);
+  expr patterns = syntax_rules_patterns(rules);
+
+  // Create the syntax transformer
+  expr transformer = make_syntax_transformer(ev->machine, literals, patterns);
+
+  // Define the transformer in the environment
+  env_define_variable(ev->machine, name, transformer, get_reg(ev, ENV));
+
+  // Return success
+  set_reg(ev, VAL, mk_num(1));
+  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }

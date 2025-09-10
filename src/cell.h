@@ -30,8 +30,10 @@ struct cell
 };
 
 extern const struct cell NIL;
+extern const struct cell FALSE;
 
 #define is_nil(e) (e.type == 0 && e.array == NULL)
+#define is_false(e) (e.type == CUSTOM && e.array == FALSE.array)
 #define is_pair(e) ((e).type == PAIR)
 #define is_sym(e) ((e).type == SYMBOL)
 #define is_str(e) ((e).type == STRING)
@@ -40,8 +42,6 @@ extern const struct cell NIL;
 #define is_custom(e) ((e).type == CUSTOM)
 #define is_vector(e) ((e).type == VECTOR)
 #define is_compound(e) (is_pair(e) || is_vector(e))
-
-#define is_eq(a, b) (a->value == b.value)
 
 #define mk_cell(t, v) ((struct cell){t, {v}})
 #define mk_num(num) mk_cell(INTEGER, (void *)num)

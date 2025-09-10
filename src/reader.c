@@ -152,7 +152,7 @@ static expr parse_symbol(char **sp, int *error)
   char *s;
   expr exp;
 
-  s = strpbrk(*sp, "\t\r\n()\"' ");
+  s = strpbrk(*sp, "\t\r\n()\"'`, ");
   if (s != NULL)
   {
     exp = mk_cell(SYMBOL, strndup(*sp, s - (*sp)));
@@ -165,7 +165,59 @@ static expr parse_symbol(char **sp, int *error)
   }
   return exp;
 }
+static expr parse_quasiquote(struct machine *m, char **sp, int *error)
+{
+  char *s;
+  expr exp;
 
+  s = *sp;
+  assert(*s == '`');
+  s++;
+
+  if (strchr("\t\r\n \0", *s))
+  {
+    *error = PERR_INV_QUASIQUOTE;
+    return NIL;
+  }
+
+  exp = parse_exp(m, &s, error);
+  exp = cons(m, exp, NIL);
+  exp = cons(m, mk_sym("quasiquote"), exp);
+
+  *sp = s;
+  return exp;
+}
+
+static expr parse_unquote(struct machine *m, char **sp, int *error)
+{
+  char *s;
+  expr exp;
+  char *symbol_name = "unquote";
+
+  s = *sp;
+  assert(*s == ',');
+  s++;
+
+  // Check for @ to handle unquote-splicing
+  if (*s == '@')
+  {
+    symbol_name = "unquote-splicing";
+    s++;
+  }
+
+  if (strchr("\t\r\n \0", *s))
+  {
+    *error = PERR_INV_UNQUOTE;
+    return NIL;
+  }
+
+  exp = parse_exp(m, &s, error);
+  exp = cons(m, exp, NIL);
+  exp = cons(m, mk_sym(symbol_name), exp);
+
+  *sp = s;
+  return exp;
+}
 expr parse_exp(struct machine *m, char **sp, int *error)
 {
   expr res;
@@ -202,6 +254,14 @@ expr parse_exp(struct machine *m, char **sp, int *error)
   else if (ch == '\'')
   {
     res = parse_quote(m, &s, error);
+  }
+  else if (ch == '`')
+  {
+    res = parse_quasiquote(m, &s, error);
+  }
+  else if (ch == ',')
+  {
+    res = parse_unquote(m, &s, error);
   }
   else if (ch == '"')
   {

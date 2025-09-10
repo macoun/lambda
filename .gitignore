@@ -5,3 +5,4 @@ profile
 xcuserdata
 .DS_Store
 src/lambda
+.sandbox

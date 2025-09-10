@@ -31,6 +31,7 @@
 (display 'F= (f d))
 (newline)
 
+
 ;-----------------------------------
 ; Recursive reduce
 (define (sum l)
@@ -58,10 +59,11 @@
       (iter v (+ i 1)))))
 
 (define (run-vector-test)
-  (define v (make-vector 'A 'B 1 "hello" "world"))
-  (display 'Length= (vector-length v))
-  (newline)
-  (iter v 0))
+  (begin
+    (define v (make-vector 'A 'B 1 "hello" "world"))
+    (display 'Length= (vector-length v))
+    (newline)
+    (iter v 0)))
 
 (run-vector-test)
 

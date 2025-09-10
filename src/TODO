@@ -10,3 +10,34 @@ EVALUATOR
 BUGS
 	- Segmentation fault when typing (1 . 2) in REPL
 	- A lot.
+
+quote_text
+env_lookup
+
+lambda_params
+lambda_body
+make_procedure
+
+appl_operands
+appl_operator
+
+make_cont
+operands_first
+operands_is_last
+adjoin_arg
+operands_rest
+begin_actions
+cdr
+
+procedure_params
+procedure_env
+env_extend
+procedure_body
+
+definition_variable
+definition_value
+env_define_variable!
+
+if_predicate
+if_alternative
+if_consequent
