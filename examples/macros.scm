@@ -14,7 +14,7 @@
 ; Define an unless macro
 (define-syntax unless
   (syntax-rules ()
-    ((unless test body ...)
+    ([unless test body ...]
      (if (not test) (begin body ...)))))
 
 ;; Define a more complex let macro
@@ -24,7 +24,7 @@
      ((lambda (var ...) body ...) val ...))))
 
 ;; Use the let macro
-(let ((x 10) (y 20))
+(let ([x 10] [y 20])
   (display (+ x y))
   (newline))
 
@@ -39,48 +39,48 @@
 ;   (display "Hello, World!")
 ;   (newline))
 
-(define-syntax cond
-  (syntax-rules (=> else)
+; (define-syntax cond
+;   (syntax-rules (=> else)
 
-    ((cond (else else1 else2 ...))
-     ;; The (if #t (begin ...)) wrapper ensures that there may be no
-     ;; internal definitions in the body of the clause.  R5RS mandates
-     ;; this in text (by referring to each subform of the clauses as
-     ;; <expression>) but not in its reference implementation of cond,
-     ;; which just expands to (begin ...) with no (if #t ...) wrapper.
-     (if #t (begin else1 else2 ...)))
+;     ((cond (else else1 else2 ...))
+;      ;; The (if #t (begin ...)) wrapper ensures that there may be no
+;      ;; internal definitions in the body of the clause.  R5RS mandates
+;      ;; this in text (by referring to each subform of the clauses as
+;      ;; <expression>) but not in its reference implementation of cond,
+;      ;; which just expands to (begin ...) with no (if #t ...) wrapper.
+;      (if #t (begin else1 else2 ...)))
 
-    ((cond (test => receiver) more-clause ...)
-     (let ((t test))
-       (cond/maybe-more t
-                        (receiver t)
-                        more-clause ...)))
+;     ((cond (test => receiver) more-clause ...)
+;      (let ((t test))
+;        (cond/maybe-more t
+;                         (receiver t)
+;                         more-clause ...)))
 
-    ((cond (generator guard => receiver) more-clause ...)
-     (call-with-values (lambda () generator)
-       (lambda t
-         (cond/maybe-more (apply guard    t)
-                          (apply receiver t)
-                          more-clause ...))))
+;     ((cond (generator guard => receiver) more-clause ...)
+;      (call-with-values (lambda () generator)
+;        (lambda t
+;          (cond/maybe-more (apply guard    t)
+;                           (apply receiver t)
+;                           more-clause ...))))
 
-    ((cond (test) more-clause ...)
-     (let ((t test))
-       (cond/maybe-more t t more-clause ...)))
+;     ((cond (test) more-clause ...)
+;      (let ((t test))
+;        (cond/maybe-more t t more-clause ...)))
 
-    ((cond (test body1 body2 ...) more-clause ...)
-     (cond/maybe-more test
-                      (begin body1 body2 ...)
-                      more-clause ...))))
+;     ((cond (test body1 body2 ...) more-clause ...)
+;      (cond/maybe-more test
+;                       (begin body1 body2 ...)
+;                       more-clause ...))))
 
-(define-syntax cond/maybe-more
-  (syntax-rules ()
-    ((cond/maybe-more test consequent)
-     (if test
-         consequent))
-    ((cond/maybe-more test consequent clause ...)
-     (if test
-         consequent
-         (cond clause ...)))))
+; (define-syntax cond/maybe-more
+;   (syntax-rules ()
+;     ((cond/maybe-more test consequent)
+;      (if test
+;          consequent))
+;     ((cond/maybe-more test consequent clause ...)
+;      (if test
+;          consequent
+;          (cond clause ...)))))
 
 (define-syntax dis
   (syntax-rules ()
@@ -102,39 +102,15 @@
 (dis3 (((1 2) (3 4)) ((5 6) (7 8))) (((9 10) (11 12)) ((13 14) (15 16))))
 (newline)
 
-(define (expand-quasiquote x)
-  (cond
-    ;; atoms
-    ((symbol? x) (list 'quote x))
-    ((not (pair? x)) x)
+(define-syntax start
+  (syntax-rules () ((_ body ...) ((lambda () body ...)))))
 
-    ;; unquote
-    ((and (pair? x) (eq? (car x) 'unquote))
-     (cadr x))
+(start 
+  (display "Starting macros examples...") 
+  (newline) 
+  (display "-------------------") 
+  (newline))
 
-    ;; unquote-splicing
-    ((and (pair? x) (eq? (car x) 'unquote-splicing))
-     (display "unquote-splicing not valid here"))
-
-    ;; list
-    (else
-     (expand-list x))))
-
-(define (expand-list lst)
-  (if (null? lst)
-      '()
-      (let ((head (car lst))
-            (tail (cdr lst)))
-        (cond
-          ;; unquote-splicing: splice directly
-          ((and (pair? head) (eq? (car head) 'unquote-splicing))
-           (list 'append (cadr head) (expand-quasiquote tail)))
-
-          ;; normal element: cons
-          (else
-           (list 'cons (expand-quasiquote head)
-                 (expand-quasiquote tail)))))))
-
- (display (expand-quasiquote
-           '(a b (c d) (unquote (+ 1 2)) (e f (unquote-splicing '(g h))) i)))
-((lambda () (display "Done with macros examples.") (newline) (display "-------------------") (newline)))
+(begin)
+(start)
+;((lambda () (display "Done with macros examples.") (newline) (display "-------------------") (newline)))

@@ -24,29 +24,31 @@
 const long DEFAULT_STACK_SIZE = 1024 * 1;
 
 static void eval_dispatch(struct evaluator *ev);
+static void ev_begin(struct evaluator *ev);
+
+static void ev_sequence(struct evaluator *ev);
+static void ev_sequence_cont(struct evaluator *ev);
+static void ev_sequence_end(struct evaluator *ev);
+
+static void ev_definition(struct evaluator *ev);
+static void ev_definition_cont(struct evaluator *ev);
+
+static void ev_application(struct evaluator *ev);
 static void ev_appl_did_operator(struct evaluator *ev);
 static void ev_appl_operand_loop(struct evaluator *ev);
 static void ev_appl_accum_arg(struct evaluator *ev);
 static void ev_appl_accum_last_arg(struct evaluator *ev);
 static void ev_appl_last_arg(struct evaluator *ev);
-static void ev_begin(struct evaluator *ev);
-static void ev_sequence(struct evaluator *ev);
-static void ev_sequence_cont(struct evaluator *ev);
-static void ev_sequence_end(struct evaluator *ev);
-static void ev_definition(struct evaluator *ev);
-static void ev_definition_cont(struct evaluator *ev);
-static void ev_application(struct evaluator *ev);
+
 static void ev_lambda(struct evaluator *ev);
 static void ev_quote(struct evaluator *ev);
 static void ev_variable(struct evaluator *ev);
 static void ev_self(struct evaluator *ev);
+
 static void ev_if(struct evaluator *ev);
 static void ev_if_alternative(struct evaluator *ev);
 static void ev_if_consequent(struct evaluator *ev);
 static void ev_if_decide(struct evaluator *ev);
-
-static void ev_define_syntax(struct evaluator *ev);
-static void ev_syntax_transformer(struct evaluator *ev);
 
 static void apply_dispatch(struct evaluator *ev);
 static void primitive_apply(struct evaluator *ev);
@@ -170,10 +172,6 @@ static void eval_dispatch(struct evaluator *ev)
   else if (is_definition(exp))
   {
     ev_definition(ev);
-  }
-  else if (is_define_syntax(exp))
-  {
-    ev_define_syntax(ev);
   }
   else if (is_begin(exp))
   {
@@ -470,41 +468,4 @@ static expr adjoin_arg(struct machine *m, expr val, expr argl)
   expr rest = cons(m, val, NIL);
   machine_pop(m, &argl);
   return list_append_x(m, argl, rest);
-}
-
-static void ev_syntax_transformer(struct evaluator *ev)
-{
-  // It's a macro application, we need to expand it first
-  error("Macro expansion not implemented yet");
-  set_reg(ev, VAL, NIL);
-  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
-}
-
-static void ev_define_syntax(struct evaluator *ev)
-{
-  expr name, rules, exp;
-
-  name = define_syntax_name(get_reg(ev, EXP));
-  rules = define_syntax_rules(get_reg(ev, EXP));
-
-  if (!is_syntax_rules(rules))
-  {
-    error("Expected syntax-rules in define-syntax, got: %d", rules.type);
-    set_reg(ev, VAL, NIL);
-    ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
-    return;
-  }
-  // Extract literals and patterns
-  expr literals = syntax_rules_literals(rules);
-  expr patterns = syntax_rules_patterns(rules);
-
-  // Create the syntax transformer
-  expr transformer = make_syntax_transformer(ev->machine, literals, patterns);
-
-  // Define the transformer in the environment
-  env_define_variable(ev->machine, name, transformer, get_reg(ev, ENV));
-
-  // Return success
-  set_reg(ev, VAL, mk_num(1));
-  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }

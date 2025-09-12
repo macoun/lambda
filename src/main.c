@@ -8,6 +8,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <libgen.h>
 #include "evaluator.h"
 #include "reader.h"
 #include "printer.h"
@@ -75,22 +76,10 @@ expr read_exp_from_file(struct machine *m, const char *fname)
   return source;
 }
 
-int evaluate_file(struct evaluator *ev, const char *fname)
+int evaluate_expressions(struct evaluator *ev, expr source)
 {
   struct machine *m = ev->machine;
-  expr source = read_exp_from_file(m, fname);
-  if (is_false(source))
-    return -1;
-  logexpr("Source", source);
-  memory_enable_gc(m->memory, false);
-  struct macros_expander *expander = macros_create(m);
-  source = macros_collect(expander, source);
-  logexpr("Source (preprocessed)", source);
-  source = macros_expand(expander, source);
-  logexpr("Source (expanded)", source);
-  machine_push(m, source);
-  memory_enable_gc(m->memory, true);
-  machine_pop(m, &source);
+
   expr current = source;
   while (!is_nil(current))
   {
@@ -100,8 +89,26 @@ int evaluate_file(struct evaluator *ev, const char *fname)
     machine_pop(m, &current);
     current = cdr(current);
   }
-  macros_destroy(expander);
+}
+
+int evaluate_file(struct evaluator *ev, struct macros_expander *expander, const char *fname)
+{
+  expr source = read_exp_from_file(ev->machine, fname);
+  if (is_false(source))
+    return -1;
+  source = macros_preprocess(expander, source);
+  if (is_false(source))
+    return -1;
+  evaluate_expressions(ev, source);
   return 0;
+}
+
+void load_modules(struct evaluator *ev, struct macros_expander *expander, const char *modules_dir)
+{
+  char fname[1024];
+  snprintf(fname, sizeof(fname), "%s/base.scm", modules_dir);
+  info("Loading base module from %s", fname);
+  evaluate_file(ev, expander, fname);
 }
 
 expr prim_say_hello(expr args)
@@ -124,7 +131,8 @@ expr prim_say_hello(expr args)
 int main(int argc, const char *argv[])
 {
   struct evaluator *ev;
-
+  char modules_dir[1024];
+  snprintf(modules_dir, sizeof(modules_dir), "%s/../modules", dirname(argv[0]));
   ev = evaluator_create();
   if (!ev)
   {
@@ -132,16 +140,20 @@ int main(int argc, const char *argv[])
     exit(1);
   }
   info("Lisper initialized");
+  struct macros_expander *expander = macros_create(ev->machine);
+  load_modules(ev, expander, modules_dir);
   add_primitives(ev->machine, list(ev->machine, mk_sym("say-hello"), NIL),
                  list(ev->machine, mk_prim(prim_say_hello), NIL));
 
   if (argc > 1)
   {
-    evaluate_file(ev, argv[1]);
+    evaluate_file(ev, expander, argv[1]);
   }
   else
-    repl(ev, argc, argv);
-
+  {
+    repl(ev, expander, argc, argv);
+  }
+  macros_destroy(expander);
   // Print detailed stats
   memory_print_stats(ev->memory);
 

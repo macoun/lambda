@@ -10,9 +10,10 @@
 #define repl_h
 
 #include "evaluator.h"
+#include "macros.h"
 
 #define __REPL_VERSION__ "0.1"
 
-void repl(struct evaluator *ev, int argc, const char *argv[]);
+void repl(struct evaluator *ev, struct macros_expander *expander, int argc, const char *argv[]);
 
 #endif /* repl_h */

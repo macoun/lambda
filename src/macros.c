@@ -109,3 +109,20 @@ static bool macros_add_syntax_transformer(struct macros_expander *expander, expr
 
   return true;
 }
+
+expr macros_preprocess(struct macros_expander *expander, expr source)
+{
+  struct machine *m = expander->machine;
+  memory_enable_gc(m->memory, false);
+  logexpr("Source", source);
+  source = macros_collect(expander, source);
+  if (is_false(source))
+    return FALSE;
+  logexpr("Source (preprocessed)", source);
+  source = macros_expand(expander, source);
+  logexpr("Source (expanded)", source);
+  machine_push(m, source);
+  memory_enable_gc(m->memory, true);
+  machine_pop(m, &source);
+  return source;
+}

@@ -29,7 +29,7 @@
 #define COLOR_OUTPUT COLOR_GREEN
 #endif
 
-void repl(struct evaluator *ev, int argc, const char *argv[])
+void repl(struct evaluator *ev, struct macros_expander *expander, int argc, const char *argv[])
 {
   char buffer[MAX_LINE_SIZE], *s;
   char stop;
@@ -49,6 +49,8 @@ void repl(struct evaluator *ev, int argc, const char *argv[])
       exp = parse_exp(ev->machine, &s, &error);
       if (error)
         break;
+      exp = macros_preprocess(expander, exp);
+
       machine_push(ev->machine, exp);
       exp = eval(ev, exp);
 
