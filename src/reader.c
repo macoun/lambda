@@ -16,14 +16,14 @@
 #include <assert.h>
 #include <stdarg.h>
 
-static expr parse_pair(struct machine *m, char **sp, int *error)
+static expr parse_pair(struct machine *m, char **sp, char *brk, int *error)
 {
   char *s;
   expr first, last = NIL, res, tmp;
   int lastexp;
 
   s = *sp;
-  assert(*s == '(');
+  assert(*s == brk[0]);
   s++;
 
   first = NIL;
@@ -32,7 +32,7 @@ static expr parse_pair(struct machine *m, char **sp, int *error)
   // Skip whitespaces
   s += strspn(s, "\t\n ");
 
-  while (*s != ')')
+  while (*s != brk[1])
   {
     machine_push(m, last);
     res = parse_exp(m, &s, error);
@@ -152,7 +152,7 @@ static expr parse_symbol(char **sp, int *error)
   char *s;
   expr exp;
 
-  s = strpbrk(*sp, "\t\r\n()\"'`, ");
+  s = strpbrk(*sp, "\t\r\n()[]\"'`, ");
   if (s != NULL)
   {
     exp = mk_cell(SYMBOL, strndup(*sp, s - (*sp)));
@@ -247,9 +247,9 @@ expr parse_exp(struct machine *m, char **sp, int *error)
 
   ch = *s;
 
-  if (ch == '(')
+  if (ch == '(' || ch == '[')
   {
-    res = parse_pair(m, &s, error);
+    res = parse_pair(m, &s, ch == '(' ? "()" : "[]", error);
   }
   else if (ch == '\'')
   {
@@ -271,7 +271,7 @@ expr parse_exp(struct machine *m, char **sp, int *error)
   {
     res = parse_number(&s, error);
   }
-  else if (ch != '\0' && !strspn(s, ";)"))
+  else if (ch != '\0' && !strspn(s, ";)]"))
   {
     res = parse_symbol(&s, error);
   }

@@ -52,7 +52,7 @@
 ;-----------------------------------
 ; Recursive loop
 (define (iter v i)
-  (if (< i (vector-length v))
+  (if [< i (vector-length v)]
     (begin
       (display i (vector-ref v i))
       (newline)
@@ -61,7 +61,7 @@
 (define (run-vector-test)
   (begin
     (define v (make-vector 'A 'B 1 "hello" "world"))
-    (display 'Length= (vector-length v))
+    (display 'Length= [vector-length v])
     (newline)
     (iter v 0)))
 
