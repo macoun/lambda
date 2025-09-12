@@ -13,13 +13,22 @@
 
 static void print_list(expr exp)
 {
+  bool first = true;
   printf("(");
   while (!is_nil(exp))
   {
-    print_exp(car(exp));
+    if (first && is_sym(car(exp)))
+    {
+      printf(COLOR_RED "%s" COLOR_RESET, car(exp).str);
+    }
+    else
+    {
+      print_exp(car(exp));
+    }
     if (!is_nil(cdr(exp)))
       printf(" ");
     exp = cdr(exp);
+    first = false;
   }
   printf(")");
 }
@@ -64,7 +73,7 @@ void print_exp(expr exp)
   }
   else if (is_sym(exp))
   {
-    printf(COLOR_BRIGHT_WHITE "%s" COLOR_RESET, exp.str);
+    printf("%s", exp.str);
   }
   else if (is_num(exp))
   {
@@ -72,7 +81,7 @@ void print_exp(expr exp)
   }
   else if (is_nil(exp))
   {
-    printf("#<null>");
+    printf(COLOR_BRIGHT_WHITE "#<null>" COLOR_RESET);
   }
   else if (is_prim(exp))
   {
@@ -80,7 +89,11 @@ void print_exp(expr exp)
   }
   else if (is_false(exp))
   {
-    printf("#f");
+    printf(COLOR_CYAN "#f" COLOR_RESET);
+  }
+  else if (is_real_true(exp))
+  {
+    printf(COLOR_CYAN "#t" COLOR_RESET);
   }
   else if (is_custom(exp))
   {
@@ -94,11 +107,6 @@ void print_exp(expr exp)
   {
     print_vector(exp);
   }
-  // else if (is_quote(exp))
-  //  {
-  //    printf("'");
-  //    print_exp(car(exp)); // text-of-quotation (quote_text)
-  //  }
   else if (is_list(exp))
   {
     print_list(exp);
@@ -107,12 +115,6 @@ void print_exp(expr exp)
   {
     print_pair(exp);
   }
-  //  else if (is_pair(exp))
-  //  {
-  //    printf("(");
-  //    print_list(exp);
-  //    printf(")");
-  //  }
   else
   {
     printf("Unknown type: %d\n", exp.type);

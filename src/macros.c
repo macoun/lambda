@@ -24,6 +24,9 @@ expr macros_collect(struct macros_expander *expander, expr exp)
 {
   expr current, source;
 
+  if (!is_pair(exp))
+    return exp; // Nothing to collect
+
   source = NIL;
   current = exp;
   while (!is_nil(current))
@@ -47,22 +50,21 @@ expr macros_expand(struct macros_expander *expander, expr exp)
 {
   struct machine *m = expander->machine;
 
-  if (is_pair(exp))
+  if (!is_pair(exp))
+    return exp; // number, symbol, nil
+
+  expr head = car(exp);
+  if (is_sym(head))
   {
-    expr head = car(exp);
-    if (is_sym(head))
+    expr ptransformer = assoq(head, expander->macros);
+    if (!is_false(ptransformer))
     {
-      expr ptransformer = assoq(head, expander->macros);
-      if (!is_false(ptransformer))
-      {
-        return macros_expand(expander, macros_transform(m, cdr(ptransformer), exp));
-      }
+      return macros_expand(expander, macros_transform(m, cdr(ptransformer), exp));
     }
-    // Otherwise recursively expand car/cdr
-    expr head_expanded = macros_expand(expander, head);
-    return cons(m, head_expanded, macros_expand(expander, cdr(exp)));
   }
-  return exp; // number, symbol, nil
+  // Otherwise recursively expand car/cdr
+  expr head_expanded = macros_expand(expander, head);
+  return cons(m, head_expanded, macros_expand(expander, cdr(exp)));
 }
 
 static expr macros_transform(struct machine *m, expr transformer, expr exp)

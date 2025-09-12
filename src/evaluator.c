@@ -444,7 +444,7 @@ static void ev_if_decide(struct evaluator *ev)
   pop_reg(ev, ENV);
   pop_reg(ev, EXP);
 
-  if (get_reg(ev, VAL).intv != 0)
+  if (!is_false(get_reg(ev, VAL)))
     ev->goto_fn = ev_if_consequent;
   else
     ev->goto_fn = ev_if_alternative;

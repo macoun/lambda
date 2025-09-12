@@ -47,7 +47,7 @@ void add_primitives(struct machine *m, expr names, expr funcs);
 
 // Self-evaluating
 #define is_self_eval(e) \
-  (is_num(e) || is_str(e) || is_nil(e))
+  (is_num(e) || is_str(e) || is_nil(e) || is_real_true(e) || is_false(e))
 
 // Variable
 #define is_variable(e) is_sym(e)

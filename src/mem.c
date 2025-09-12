@@ -25,6 +25,8 @@
 const struct cell NIL = mk_cell(0, NULL);
 static const bool _false = false;
 const struct cell FALSE = mk_cell(CUSTOM, &_false);
+static const bool _true = true;
+const struct cell TRUE = mk_cell(CUSTOM, &_true);
 
 // Configuration constants
 #define DEFAULT_SEGMENT_SIZE 108 * 5

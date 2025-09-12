@@ -113,9 +113,9 @@ expr op_eq(struct machine *m, expr args)
     cur = car(args);
     args = cdr(args);
     if (!is_equal(ref, cur))
-      return mk_num(0);
+      return FALSE;
   }
-  return mk_num(1);
+  return TRUE;
 }
 
 expr op_gt(struct machine *m, expr args)
@@ -125,7 +125,7 @@ expr op_gt(struct machine *m, expr args)
   if (is_nil(cdr(args)))
   {
     error("Too few arguments");
-    return mk_num(0);
+    return FALSE;
   }
 
   ref = car(args);
@@ -136,9 +136,9 @@ expr op_gt(struct machine *m, expr args)
     cur = car(args);
     args = cdr(args);
     if (ref.longv <= cur.longv)
-      return mk_num(0);
+      return FALSE;
   }
-  return mk_num(1);
+  return TRUE;
 }
 
 expr op_lt(struct machine *m, expr args)
@@ -148,7 +148,7 @@ expr op_lt(struct machine *m, expr args)
   if (is_nil(cdr(args)))
   {
     error("Too few arguments");
-    return mk_num(0);
+    return FALSE;
   }
 
   ref = car(args);
@@ -159,9 +159,9 @@ expr op_lt(struct machine *m, expr args)
     cur = car(args);
     args = cdr(args);
     if (ref.longv >= cur.longv)
-      return mk_num(0);
+      return FALSE;
   }
-  return mk_num(1);
+  return TRUE;
 }
 
 #pragma mark -
@@ -247,89 +247,69 @@ expr op_println(struct machine *m, expr args)
 
 expr op_is_null(struct machine *m, expr args)
 {
-  long b;
-  b = is_nil(car(args)) ? 1 : 0;
-  return mk_num(b);
+  return is_nil(car(args)) ? TRUE : FALSE;
 }
 
 expr op_is_number(struct machine *m, expr args)
 {
-  long b;
-  b = is_num(car(args)) ? 1 : 0;
-  return mk_num(b);
+  return is_num(car(args)) ? TRUE : FALSE;
 }
 
 expr op_is_string(struct machine *m, expr args)
 {
-  long b;
-  b = is_str(car(args)) ? 1 : 0;
-  return mk_num(b);
+  return is_str(car(args)) ? TRUE : FALSE;
 }
 
 expr op_is_pair(struct machine *m, expr args)
 {
-  long b;
-  b = is_pair(car(args)) ? 1 : 0;
-  return mk_num(b);
+  return is_pair(car(args)) ? TRUE : FALSE;
 }
 
 expr op_is_symbol(struct machine *m, expr args)
 {
-  long b;
-  b = is_sym(car(args)) ? 1 : 0;
-  return mk_num(b);
+  return is_sym(car(args)) ? TRUE : FALSE;
 }
 
 #pragma mark -
 
 expr op_is_zero(struct machine *m, expr args)
 {
-  long b;
   expr arg;
 
   arg = car(args);
-  b = (is_num(arg) && arg.intv == 0) ? 1 : 0;
-  return mk_num(b);
+  return (is_num(arg) && arg.intv == 0) ? TRUE : FALSE;
 }
 
 expr op_is_positive(struct machine *m, expr args)
 {
-  long b;
   expr arg;
 
   arg = car(args);
-  b = (is_num(arg) && arg.intv > 0) ? 1 : 0;
-  return mk_num(b);
+  return (is_num(arg) && arg.intv > 0) ? TRUE : FALSE;
 }
 
 expr op_is_negative(struct machine *m, expr args)
 {
-  long b;
   expr arg;
 
   arg = car(args);
-  b = (is_num(arg) && arg.intv < 0) ? 1 : 0;
-  return mk_num(b);
+  return (is_num(arg) && arg.intv < 0) ? TRUE : FALSE;
 }
 
 expr op_is_odd(struct machine *m, expr args)
 {
-  long b;
   expr arg;
 
   arg = car(args);
-  b = (is_num(arg) && abs(arg.intv) % 2 == 1) ? 1 : 0;
-  return mk_num(b);
+  return (is_num(arg) && abs(arg.intv) % 2 == 1) ? TRUE : FALSE;
 }
 
 expr op_is_even(struct machine *m, expr args)
 {
-  long b;
   expr arg;
 
   arg = car(args);
-  b = (is_num(arg) && arg.intv % 2 == 0) ? 1 : 0;
-  return mk_num(b);
+  return (is_num(arg) && arg.intv % 2 == 0) ? TRUE : FALSE;
 }
 
 #pragma mark -

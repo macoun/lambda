@@ -165,6 +165,7 @@ static expr parse_symbol(char **sp, int *error)
   }
   return exp;
 }
+
 static expr parse_quasiquote(struct machine *m, char **sp, int *error)
 {
   char *s;
@@ -274,6 +275,16 @@ expr parse_exp(struct machine *m, char **sp, int *error)
   else if (ch != '\0' && !strspn(s, ";)]"))
   {
     res = parse_symbol(&s, error);
+    if (!strcmp(res.str, "#t"))
+    {
+      free(res.str);
+      res = TRUE;
+    }
+    else if (!strcmp(res.str, "#f"))
+    {
+      free(res.str);
+      res = FALSE;
+    }
   }
   else if (ch != '\0')
   {
