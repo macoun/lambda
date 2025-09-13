@@ -103,7 +103,9 @@
 (newline)
 
 (define-syntax start
-  (syntax-rules () ((_ body ...) ((lambda () body ...)))))
+  (syntax-rules () 
+  ((_ body rest ...) ((lambda () body rest ...)))
+  ((_ rest ...) ((lambda () rest ...)))))
 
 (start 
   (display "Starting macros examples...") 

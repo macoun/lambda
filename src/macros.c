@@ -10,8 +10,17 @@ static expr macros_transform(struct machine *m, expr transformer, expr exp);
 struct macros_expander *macros_create(struct machine *m)
 {
   struct macros_expander *expander = malloc(sizeof(struct macros_expander));
+  struct array *a = memory_alloc_root(m->memory, 1);
   expander->machine = m;
-  expander->macros = NIL;
+  expander->macros = a->cells;
+  array_push(a, NIL); // Initially no macros
+  expr head = expander->macros[0];
+  logexpr("INIT macros", head);
+  while (!is_nil(head))
+  {
+    logexpr("INIT macro", caar(head));
+    head = cdr(head);
+  }
   return expander;
 }
 
@@ -50,26 +59,28 @@ expr macros_expand(struct macros_expander *expander, expr exp)
 {
   struct machine *m = expander->machine;
 
-  if (!is_pair(exp))
-    return exp; // number, symbol, nil
-
-  expr head = car(exp);
-  if (is_sym(head))
+  if (is_pair(exp))
   {
-    expr ptransformer = assoq(head, expander->macros);
-    if (!is_false(ptransformer))
+    expr head = car(exp);
+    if (is_sym(head))
     {
-      return macros_expand(expander, macros_transform(m, cdr(ptransformer), exp));
+      expr ptransformer = assoq(head, expander->macros[0]);
+      if (!is_false(ptransformer))
+      {
+        return macros_expand(expander, macros_transform(m, cdr(ptransformer), exp));
+      }
     }
+    // Otherwise recursively expand car/cdr
+    expr head_expanded = macros_expand(expander, head);
+    return cons(m, head_expanded, macros_expand(expander, cdr(exp)));
   }
-  // Otherwise recursively expand car/cdr
-  expr head_expanded = macros_expand(expander, head);
-  return cons(m, head_expanded, macros_expand(expander, cdr(exp)));
+  return exp; // number, symbol, nil
 }
 
 static expr macros_transform(struct machine *m, expr transformer, expr exp)
 {
   expr patterns = syntax_transformer_patterns(transformer);
+  logexpr("All Patterns", patterns);
   expr literals = syntax_transformer_literals(transformer);
   while (!is_nil(patterns))
   {
@@ -77,21 +88,28 @@ static expr macros_transform(struct machine *m, expr transformer, expr exp)
     expr template = syntax_template(car(patterns));
 
     expr bindings = match_pattern(m, pattern, exp, literals);
-
+    logexpr("Transforming", exp);
+    logexpr("With pattern", pattern);
+    logexpr("Got bindings", bindings);
     if (!is_false(bindings))
     {
       expr patternvars = pattern_depths(m, pattern, literals);
       return expand_template(m, template, 0, bindings, patternvars, NIL);
     }
+    logexpr("Patterns", patterns);
     patterns = cdr(patterns);
+    logexpr("Patterns after", patterns);
   }
-  return exp;
+  error("No pattern matched for");
+  print_exp(exp);
+  printf("\n");
+  return FALSE;
 }
 
 static bool macros_add_syntax_transformer(struct macros_expander *expander, expr exp)
 {
   struct machine *m = expander->machine;
-
+  logexpr("Defining syntax", exp);
   expr name = define_syntax_name(exp);
   expr rules = define_syntax_rules(exp);
 
@@ -107,7 +125,9 @@ static bool macros_add_syntax_transformer(struct macros_expander *expander, expr
 
   // Create the syntax transformer
   expr transformer = make_syntax_transformer(m, literals, patterns);
-  expander->macros = cons(m, cons(m, name, transformer), expander->macros);
+  logexpr("Created syntax transformer", transformer);
+  logexpr("For name", name);
+  expander->macros[0] = cons(m, cons(m, name, transformer), expander->macros[0]);
 
   return true;
 }
@@ -117,9 +137,21 @@ expr macros_preprocess(struct macros_expander *expander, expr source)
   struct machine *m = expander->machine;
   memory_enable_gc(m->memory, false);
   logexpr("Source", source);
+  expr head = expander->macros[0];
+  while (!is_nil(head))
+  {
+    logexpr("Before collecting macro", caar(head));
+    head = cdr(head);
+  }
   source = macros_collect(expander, source);
   if (is_false(source))
     return FALSE;
+  head = expander->macros[0];
+  while (!is_nil(head))
+  {
+    logexpr("Collected macro", caar(head));
+    head = cdr(head);
+  }
   logexpr("Source (preprocessed)", source);
   source = macros_expand(expander, source);
   logexpr("Source (expanded)", source);

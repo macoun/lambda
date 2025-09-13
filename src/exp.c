@@ -164,23 +164,23 @@ expr list_append_x(struct machine *m, expr l, expr e)
 
 expr list_append(struct machine *m, expr l, expr e)
 {
-  expr tmp, tail;
+  expr head;
 
   if (is_nil(l))
     return e;
 
-  tmp = NIL;
+  head = NIL;
   while (!is_nil(l))
   {
-    tmp = cons(m, car(l), tmp);
+    head = cons(m, car(l), head);
     l = cdr(l);
   }
   while (!is_nil(e))
   {
-    tmp = cons(m, car(e), tmp);
+    head = cons(m, car(e), head);
     e = cdr(e);
   }
-  expr reversed = list_reverse(m, tmp);
+  expr reversed = list_reverse(m, head);
   return reversed;
 }
 

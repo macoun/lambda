@@ -6,7 +6,7 @@
 struct macros_expander
 {
   struct machine *machine;
-  expr macros; // List of syntax transformers
+  expr *macros; // List of syntax transformers
 };
 
 struct macros_expander *macros_create(struct machine *m);

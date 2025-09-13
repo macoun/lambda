@@ -52,6 +52,7 @@ expr pattern_vars(struct machine *m, expr pattern, int depth, expr literals, exp
     }
     return bindings;
   }
+  return bindings; // number, string, nil, leave unchanged
 }
 
 expr lookup_var(expr var, expr bindings, expr patternvars, int depth, expr idxstack)
@@ -81,7 +82,9 @@ expr lookup_var(expr var, expr bindings, expr patternvars, int depth, expr idxst
     expr idx = list_ref(idxstack, mk_num(start + i));
     if (!is_pair(cur))
     {
-      error("lookup_var: expected list while indexing", var);
+      error("lookup_var: expected list while indexing");
+      print_exp(cur);
+      printf("\n");
       return FALSE;
     }
     cur = list_ref(cur, idx);

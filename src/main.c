@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <libgen.h>
+#include <sys/stat.h>
 #include "evaluator.h"
 #include "reader.h"
 #include "printer.h"
@@ -50,6 +51,7 @@ expr read_exp_from_file(struct machine *m, const char *fname)
   source = NIL;
   buffer = read_file(fname);
   p = buffer;
+  memory_enable_gc(m->memory, false);
   for (; *p != '\0';)
   {
     exp = parse_exp(m, &p, &err);
@@ -73,10 +75,13 @@ expr read_exp_from_file(struct machine *m, const char *fname)
   free(buffer);
   if (!is_false(source))
     source = list_reverse(m, source);
+  machine_push(m, source);
+  memory_enable_gc(m->memory, false);
+  machine_pop(m, &source);
   return source;
 }
 
-int evaluate_expressions(struct evaluator *ev, expr source)
+void evaluate_expressions(struct evaluator *ev, expr source)
 {
   struct machine *m = ev->machine;
 
@@ -128,20 +133,38 @@ expr prim_say_hello(expr args)
   return mk_num(1);
 }
 
+bool find_modules_dir(const char *program_path, char *dest)
+{
+  char buffer[1024], *dir;
+  struct stat sb;
+  strncpy(buffer, program_path, sizeof(buffer));
+  dir = dirname(buffer);
+  if (dir == NULL)
+    return false; // iterate through PATH
+  snprintf(dest, sizeof(buffer), "%s/../modules", dir);
+
+  return (stat(dir, &sb) == 0 && S_ISDIR(sb.st_mode));
+}
+
 int main(int argc, const char *argv[])
 {
   struct evaluator *ev;
   char modules_dir[1024];
-  snprintf(modules_dir, sizeof(modules_dir), "%s/../modules", dirname(argv[0]));
+  snprintf(modules_dir, sizeof(modules_dir), "%s/../modules", argv[0]);
+  if (!find_modules_dir(argv[0], modules_dir))
+  {
+    fprintf(stderr, "Could not find modules directory\n");
+    exit(1);
+  }
   ev = evaluator_create();
   if (!ev)
   {
     error("Cannot initialize Lisper");
     exit(1);
   }
-  info("Lisper initialized");
   struct macros_expander *expander = macros_create(ev->machine);
   load_modules(ev, expander, modules_dir);
+  info("Lisper initialized");
   add_primitives(ev->machine, list(ev->machine, mk_sym("say-hello"), NIL),
                  list(ev->machine, mk_prim(prim_say_hello), NIL));
 
@@ -150,13 +173,12 @@ int main(int argc, const char *argv[])
     evaluate_file(ev, expander, argv[1]);
   }
   else
-  {
     repl(ev, expander, argc, argv);
-  }
-  macros_destroy(expander);
+
   // Print detailed stats
   memory_print_stats(ev->memory);
 
+  macros_destroy(expander);
   evaluator_destroy(ev);
   return 0;
 }
