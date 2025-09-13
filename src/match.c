@@ -2,22 +2,8 @@
 #include "printer.h"
 #include "logger.h"
 #include "evaluator.h"
+#include "pattern.h"
 
-expr find_repeated_pattern(expr pattern)
-{
-  if (is_nil(pattern) || is_underscore(pattern))
-    return NIL;
-  else if (is_ellipsis(pattern))
-    return FALSE;
-
-  while (!is_nil(pattern))
-  {
-    if (is_ellipsis_pattern(pattern))
-      return pattern;
-    pattern = cdr(pattern);
-  }
-  return NIL;
-}
 expr match_list_p(struct machine *m, expr *pattern, expr *input, expr literals)
 {
   expr bindings = NIL;
@@ -74,6 +60,14 @@ expr match_list_pattern(struct machine *m, expr pattern, expr input, expr litera
   if (rest_value_count < rest_pattern_count)
     return FALSE; // Not enough values to match the rest patterns
 
+  expr sbtvars = NIL;
+  expr bind = pattern_depths(m, ellipsis_part, literals);
+  while (!is_nil(bind))
+  {
+    sbtvars = cons(m, caar(bind), sbtvars);
+    bind = cdr(bind);
+  }
+
   expr ellipsis_bindings = NIL;
   for (int i = 0; i < rest_value_count - rest_pattern_count && !is_nil(input); i++)
   {
@@ -82,14 +76,8 @@ expr match_list_pattern(struct machine *m, expr pattern, expr input, expr litera
 
     if (is_false(eb))
       return FALSE; // No match in ellipsis part
-    expr keys = NIL;
-    expr bind = eb;
-    while (!is_nil(bind))
-    {
-      keys = cons(m, caar(bind), keys);
-      bind = cdr(bind);
-    }
 
+    expr keys = sbtvars;
     while (!is_nil(keys))
     {
       expr key = car(keys);
@@ -108,6 +96,23 @@ expr match_list_pattern(struct machine *m, expr pattern, expr input, expr litera
     }
     if (is_pair(input))
       input = cdr(input);
+  }
+
+  if (is_nil(ellipsis_bindings))
+  {
+    // No matches in ellipsis part, ensure all pattern variables are bound to empty lists
+    expr keys = sbtvars;
+    while (!is_nil(keys))
+    {
+      expr key = car(keys);
+      expr bind = assoq(key, ellipsis_bindings);
+      if (is_false(bind))
+      {
+        expr initial = cons(m, key, NIL);
+        ellipsis_bindings = cons(m, initial, ellipsis_bindings);
+      }
+      keys = cdr(keys);
+    }
   }
 
   // Now handle rest patterns

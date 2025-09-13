@@ -3,6 +3,7 @@
 #include "expand.h"
 #include "logger.h"
 #include "printer.h"
+#include "pattern.h"
 
 static bool macros_add_syntax_transformer(struct macros_expander *expander, expr exp);
 static expr macros_transform(struct machine *m, expr transformer, expr exp);

@@ -104,8 +104,7 @@
 
 (define-syntax start
   (syntax-rules () 
-  ((_ body rest ...) ((lambda () body rest ...)))
-  ((_ rest ...) ((lambda () rest ...)))))
+    ((_ rest ...) ((lambda () rest ...)))))
 
 (start 
   (display "Starting macros examples...") 
@@ -114,5 +113,10 @@
   (newline))
 
 (begin)
-(start)
+(let ([sres (start)])
+  (display "Result of start with no body: ")
+  (display sres)
+  (newline)
+  (display "-------------------")
+  (newline))
 ;((lambda () (display "Done with macros examples.") (newline) (display "-------------------") (newline)))
