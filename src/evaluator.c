@@ -126,7 +126,7 @@ void add_primitives(struct machine *m, expr names, expr funcs)
 }
 
 #pragma mark Evaluator
-void ev_match_pattern(struct evaluator *ev);
+
 expr eval(struct evaluator *ev, expr exp)
 {
   expr val;

@@ -13,6 +13,8 @@
 #include "env.h"
 #include "match.h"
 #include "expand.h"
+#include "pattern.h"
+
 #include <string.h>
 
 expr op_add(struct machine *m, expr args)
@@ -439,7 +441,7 @@ expr op_pattern_vars(struct machine *m, expr args)
   pattern = car(args);
   literals = cadr(args);
 
-  return pattern_vars(m, pattern, 0, literals, NIL);
+  return pattern_depths(m, pattern, literals);
 }
 
 expr primitives_env(struct machine *m)

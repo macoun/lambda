@@ -12,28 +12,8 @@
 #include "evaluator.h"
 
 static expr make_frame(struct machine *m, expr vars, expr vals);
-static void frame_bind(struct machine *m, expr frame, expr var, expr val);
-static expr frame_vars(expr frame);
-static expr frame_vals(expr frame);
-
-void print_frame(expr frame)
-{
-  expr vars, vals;
-
-  vars = frame_vars(frame);
-  vals = frame_vals(frame);
-
-  while (!is_nil(vars))
-  {
-    print_exp(car(vars));
-    printf(":\t");
-    print_exp(car(vals));
-    printf("\t\t*\n");
-
-    vars = cdr(vars);
-    vals = cdr(vals);
-  }
-}
+static expr frame_bind(struct machine *m, expr frame, expr var, expr val);
+static expr *frame_lookup(expr frame, expr var);
 
 expr *env_lookup(expr var, expr env)
 {
@@ -56,37 +36,34 @@ expr *env_lookup(expr var, expr env)
 expr env_extend(struct machine *m, expr vars, expr vals, expr env)
 {
   expr frame;
-  // info("Extending environment vars:");
-  // print_exp(vars);
-  // printf("\n");
-  // info("with vals:");
-  // print_exp(vals);
-  // printf("\n");
-  // fflush(stdout);
+
   machine_push(m, env);
-  machine_push(m, vars);
-  machine_push(m, vals);
   frame = make_frame(m, vars, vals);
-  expr res = cons(m, frame, env);
-  machine_pop(m, &vals);
-  machine_pop(m, &vars);
   machine_pop(m, &env);
-  return res;
+
+  return cons(m, frame, env);
 }
 
 expr env_define_variable(struct machine *m, expr var, expr val, expr env)
 {
   expr frame;
-  expr *res;
 
   frame = env_frame(env);
-  res = frame_lookup(frame, var);
-  if (res != NULL)
-    res[0] = val;
-  else
-    frame_bind(m, frame, var, val);
+  expr bind = assoq(var, frame);
 
-  return mk_num(1);
+  if (!is_false(bind))
+  {
+    set_cdr(bind, val);
+  }
+  else
+  {
+    machine_push(m, env);
+    bind = cons(m, var, val);
+    machine_pop(m, &env);
+    set_car(env, cons(m, bind, env_frame(env)));
+  }
+
+  return TRUE;
 }
 
 expr env_frame(expr env)
@@ -100,57 +77,45 @@ expr env_parent(expr env)
 }
 
 // Frame
-expr make_frame(struct machine *m, expr vars, expr vals)
+static expr make_frame(struct machine *m, expr vars, expr vals)
 {
-  return cons(m, vars, vals);
-}
+  expr frame = NIL;
 
-expr frame_vars(expr frame)
-{
-  return car(frame);
-}
-
-expr frame_vals(expr frame)
-{
-  return cdr(frame);
-}
-
-expr *frame_lookup(expr frame, expr var)
-{
-  expr vars, vals;
-
-  //  printf("\nLookup for %s\n", var.str);
-  //  print_frame(frame);
-
-  vars = frame_vars(frame);
-  vals = frame_vals(frame);
-
-  while (!is_nil(vars))
+  while (is_pair(vars) && is_pair(vals))
   {
-    if (is_equal(car(vars), var))
-      return vals.array;
+    if (!is_sym(car(vars)))
+    {
+      error("Non-symbol in variable list");
+      print_exp(car(vars));
+      printf("\n");
+      return FALSE;
+    }
+
+    machine_push(m, vars);
+    machine_push(m, vals);
+    frame = frame_bind(m, frame, car(vars), car(vals));
+    machine_pop(m, &vals);
+    machine_pop(m, &vars);
 
     vars = cdr(vars);
     vals = cdr(vals);
   }
+  return frame;
+}
+
+static expr *frame_lookup(expr frame, expr var)
+{
+  expr bind = assoq(var, frame);
+  if (!is_false(bind))
+    return bind.array + 1;
   return NULL;
 }
 
-static void frame_bind(struct machine *m, expr frame, expr var, expr val)
+static expr frame_bind(struct machine *m, expr frame, expr var, expr val)
 {
-  expr exp;
-
-  machine_push(m, val);
   machine_push(m, frame);
-  exp = cons(m, var, car(frame));
-  machine_pop(m, &frame);
-  machine_pop(m, &val);
-
-  set_car(frame, exp);
-
-  machine_push(m, frame);
-  exp = cons(m, val, cdr(frame));
+  expr bind = cons(m, var, val);
   machine_pop(m, &frame);
 
-  set_cdr(frame, exp);
+  return cons(m, bind, frame);
 }
