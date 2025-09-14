@@ -13,10 +13,11 @@
 #include "machine.h"
 
 expr env_lookup(expr var, expr env);
-
+expr env_empty(struct machine *m);
 expr env_parent(expr env);
 expr env_frame(expr env);
 expr env_extend(struct machine *m, expr vars, expr vals, expr env);
+expr env_extend_with_frame(struct machine *m, expr frame, expr env);
 expr env_define_variable(struct machine *m, expr var, expr val, expr env);
 expr env_set_variable(struct machine *m, expr var, expr val, expr env);
 

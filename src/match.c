@@ -35,10 +35,6 @@ expr match_list_p(struct machine *m, expr *pattern, expr *input, expr literals)
 
 expr match_list_pattern(struct machine *m, expr pattern, expr input, expr literals)
 {
-
-  if (!is_pair(input))
-    return FALSE; // No match
-
   // Match element by element
   expr bindings = match_list_p(m, &pattern, &input, literals);
 

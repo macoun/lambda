@@ -15,22 +15,9 @@
 static expr make_frame(struct machine *m, expr vars, expr vals);
 static expr frame_lookup(expr frame, expr var);
 
-expr env_lookup(expr var, expr env)
+expr env_empty(struct machine *m)
 {
-  expr frame;
-  expr res;
-
-  while (!is_nil(env))
-  {
-    frame = env_frame(env);
-    res = frame_lookup(frame, var);
-    if (!is_false(res))
-      return res;
-
-    env = env_parent(env);
-  }
-
-  return FALSE;
+  return cons(m, NIL, NIL);
 }
 
 expr env_extend(struct machine *m, expr vars, expr vals, expr env)
@@ -41,6 +28,11 @@ expr env_extend(struct machine *m, expr vars, expr vals, expr env)
   frame = make_frame(m, vars, vals);
   machine_pop(m, &env);
 
+  return env_extend_with_frame(m, frame, env);
+}
+
+expr env_extend_with_frame(struct machine *m, expr frame, expr env)
+{
   return cons(m, frame, env);
 }
 
@@ -51,6 +43,11 @@ expr env_define_variable(struct machine *m, expr var, expr val, expr env)
   frame = env_frame(env);
   expr bind = assoq(var, frame);
 
+  if (is_nil(env))
+  {
+    error("No environment to define variable in");
+    return FALSE;
+  }
   if (is_false(bind))
   {
     machine_push(m, env);
@@ -73,6 +70,24 @@ expr env_set_variable(struct machine *m, expr var, expr val, expr env)
     return TRUE;
   }
   error("Can not set unbound var %s", var.str);
+  return FALSE;
+}
+
+expr env_lookup(expr var, expr env)
+{
+  expr frame;
+  expr res;
+
+  while (!is_nil(env))
+  {
+    frame = env_frame(env);
+    res = frame_lookup(frame, var);
+    if (!is_false(res))
+      return res;
+
+    env = env_parent(env);
+  }
+
   return FALSE;
 }
 

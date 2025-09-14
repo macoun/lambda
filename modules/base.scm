@@ -65,6 +65,14 @@
      (let ((var init))
        (letrec* (rest ...) body1 body2 ...))]))
 
+(define-syntax let-syntax
+  (syntax-rules ()
+    ((_ ((kw trans) ...) body1 body2 ...)
+     (let ()
+       (define-syntax kw trans)
+       ...
+       body1 body2 ...))))
+
 (define-syntax and
   (syntax-rules ()
     ((_ ) #t)

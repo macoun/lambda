@@ -4,6 +4,7 @@
 #include "logger.h"
 #include "printer.h"
 #include "pattern.h"
+#include "env.h"
 
 static bool macros_add_syntax_transformer(struct macros_expander *expander, expr exp);
 static expr macros_transform(struct machine *m, expr transformer, expr exp);
@@ -12,9 +13,11 @@ struct macros_expander *macros_create(struct machine *m)
 {
   struct macros_expander *expander = malloc(sizeof(struct macros_expander));
   struct array *a = memory_alloc_root(m->memory, 1);
+  array_push(a, NIL);
+
   expander->machine = m;
   expander->macros = a->cells;
-  array_push(a, NIL); // Initially no macros
+  expander->macros[0] = env_empty(m);
 
   return expander;
 }
@@ -53,16 +56,25 @@ expr macros_collect(struct macros_expander *expander, expr exp)
 expr macros_expand(struct macros_expander *expander, expr exp)
 {
   struct machine *m = expander->machine;
+  if (is_nil(expander->macros[0]))
+    error("No environment for macros");
 
   if (is_pair(exp))
   {
     expr head = car(exp);
     if (is_sym(head))
     {
-      expr ptransformer = assoq(head, expander->macros[0]);
+      // expr ptransformer = assoq(head, expander->macros[0]);
+      expr ptransformer = env_lookup(head, expander->macros[0]);
       if (!is_false(ptransformer))
       {
-        return macros_expand(expander, macros_transform(m, cdr(ptransformer), exp));
+        expr expanded = macros_transform(m, cdr(ptransformer), exp);
+        expr env = expander->macros[0];
+        expander->macros[0] = env_extend_with_frame(m, NIL, env);
+        expr preprocessed = macros_collect(expander, expanded);
+        expanded = macros_expand(expander, preprocessed);
+        expander->macros[0] = env;
+        return expanded;
       }
     }
     // Otherwise recursively expand car/cdr
@@ -122,8 +134,10 @@ static bool macros_add_syntax_transformer(struct macros_expander *expander, expr
   expr transformer = make_syntax_transformer(m, literals, patterns);
   logexpr("Created syntax transformer", transformer);
   logexpr("For name", name);
-  expander->macros[0] = cons(m, cons(m, name, transformer), expander->macros[0]);
-
+  env_define_variable(m, name, transformer, expander->macros[0]);
+  // expander->macros[0] = cons(m, cons(m, name, transformer), expander->macros[0]);
+  logexpr("Current macros env", expander->macros[0]);
+  info("Defined env array pos %p", expander->macros[0].array);
   return true;
 }
 
