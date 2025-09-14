@@ -17,6 +17,6 @@ expr *env_lookup(expr var, expr env);
 expr env_parent(expr env);
 expr env_frame(expr env);
 expr env_extend(struct machine *m, expr vars, expr vals, expr env);
-expr env_define_variable(struct machine *m, expr var, expr val, expr env);
+expr env_define_variable(struct machine *m, expr var, expr val, expr env, bool create);
 
 #endif /* env_h */

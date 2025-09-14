@@ -137,19 +137,17 @@ void add_primitives(struct machine *m, expr names, expr funcs);
 #define operands_first(e) car(e)
 #define operands_rest(e) cdr(e)
 
-// Sequence
-#define is_begin(e) is_tagged(e, "begin")
-#define begin_actions(e) cdr(e)
-
 // Definition
 #define is_definition(e) \
-  is_tagged(e, "define") || is_tagged(e, "def")
+  is_tagged(e, "define") || is_tagged(e, "def") || is_tagged(e, "set!")
 
 #define definition_variable(e) \
   ((is_sym(cadr(e))) ? cadr(e) : caadr(e))
 
 #define definition_value(m, e) ( \
     (is_sym(cadr(e))) ? caddr(e) : make_lambda(m, cdadr(e), cddr(e)))
+
+#define is_set_definition(e) is_tagged(e, "set!")
 
 // Evaluator developers only
 void push_reg(struct evaluator *m, int reg);

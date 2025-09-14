@@ -76,6 +76,17 @@
       (iter-loop (+ i 1) (+ (* 2 (f i))))))
   (iter-loop 0 0))
 
+;(set! ref "set! test")
+;(display ref)
+(newline)
+
+(define ref "initial value")
+(display ref)
+(newline)
+(set! ref "changed value")
+(display ref)
+(newline)
+
 (display "Iterating... ")
 ;(define result (iter 500000 (lambda (i) (+ 1 i))))
 (display (make-vector 1 2 3 4 5 6 7 8 9 0))

@@ -44,7 +44,7 @@ expr env_extend(struct machine *m, expr vars, expr vals, expr env)
   return cons(m, frame, env);
 }
 
-expr env_define_variable(struct machine *m, expr var, expr val, expr env)
+expr env_define_variable(struct machine *m, expr var, expr val, expr env, bool create)
 {
   expr frame;
 
@@ -54,16 +54,18 @@ expr env_define_variable(struct machine *m, expr var, expr val, expr env)
   if (!is_false(bind))
   {
     set_cdr(bind, val);
+    return TRUE;
   }
-  else
+  else if (create)
   {
     machine_push(m, env);
     bind = cons(m, var, val);
     machine_pop(m, &env);
     set_car(env, cons(m, bind, env_frame(env)));
+    return TRUE;
   }
-
-  return TRUE;
+  error("Can not set unbound var %s", var.str);
+  return FALSE;
 }
 
 expr env_frame(expr env)

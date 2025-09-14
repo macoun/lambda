@@ -72,6 +72,51 @@
         acc
         (loop (cdr lst) (cons (car lst) acc)))))
 
+;; list-ref: 0-based indexing
+(define (list-ref lst n)
+  (if (= n 0)
+      (car lst)
+      (list-ref (cdr lst) (- n 1))))
+
+;; membership predicates
+(define (memq x lst)
+  (cond
+    ((null? lst) #f)
+    ((eq? x (car lst)) lst)
+    (else (memq x (cdr lst)))))
+
+(define (memv x lst)
+  (cond
+    ((null? lst) #f)
+    ((eqv? x (car lst)) lst)
+    (else (memv x (cdr lst)))))
+
+(define (member x lst)
+  (cond
+    ((null? lst) #f)
+    ((equal? x (car lst)) lst)
+    (else (member x (cdr lst)))))
+
+;; association lists
+(define (assq key alist)
+  (cond
+    ((null? alist) #f)
+    ((eq? key (caar alist)) (car alist))
+    (else (assq key (cdr alist)))))
+
+(define (assv key alist)
+  (cond
+    ((null? alist) #f)
+    ((eqv? key (caar alist)) (car alist))
+    (else (assv key (cdr alist)))))
+
+(define (assoc key alist)
+  (cond
+    ((null? alist) #f)
+    ((equal? key (caar alist)) (car alist))
+    (else (assoc key (cdr alist)))))
+
+;; functional helpers
 (define (map f lst)
   (if (null? lst)
       '()

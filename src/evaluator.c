@@ -397,6 +397,7 @@ static void ev_definition(struct evaluator *ev)
 {
   set_reg(ev, UNEV, definition_variable(get_reg(ev, EXP)));
   push_reg(ev, UNEV);
+  push_reg(ev, EXP);
   set_reg(ev, EXP, definition_value(ev->machine, get_reg(ev, EXP)));
   push_reg(ev, ENV);
   push_reg(ev, CONTINUE);
@@ -409,8 +410,9 @@ static void ev_definition_cont(struct evaluator *ev)
 {
   pop_reg(ev, CONTINUE);
   pop_reg(ev, ENV);
+  pop_reg(ev, EXP);
   pop_reg(ev, UNEV);
-  env_define_variable(ev->machine, get_reg(ev, UNEV), get_reg(ev, VAL), get_reg(ev, ENV));
+  env_define_variable(ev->machine, get_reg(ev, UNEV), get_reg(ev, VAL), get_reg(ev, ENV), !(is_set_definition(get_reg(ev, EXP))));
   set_reg(ev, VAL, mk_num(1));
   ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }

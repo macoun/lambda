@@ -136,13 +136,10 @@ static expr parse_string(char **sp, int *error)
 
 static expr parse_number(char **sp, int *error)
 {
-  char *s;
-  expr exp;
+  char *endptr, *s;
 
   s = *sp;
   assert(isdigit(*s) || (*s == '-' && isdigit(*(s + 1))));
-
-  char *endptr;
 
   // double val = strtod(s, &endptr);
   // if (endptr != s)
