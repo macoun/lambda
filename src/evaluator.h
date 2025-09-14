@@ -136,10 +136,11 @@ void add_primitives(struct machine *m, expr names, expr funcs);
 #define operands_is_last(e) is_nil(cdr(e))
 #define operands_first(e) car(e)
 #define operands_rest(e) cdr(e)
+#define is_apply(e) is_tagged(e, "apply")
 
 // Definition
 #define is_definition(e) \
-  is_tagged(e, "define") || is_tagged(e, "def") || is_tagged(e, "set!")
+  (is_tagged(e, "define"))
 
 #define definition_variable(e) \
   ((is_sym(cadr(e))) ? cadr(e) : caadr(e))
@@ -147,7 +148,9 @@ void add_primitives(struct machine *m, expr names, expr funcs);
 #define definition_value(m, e) ( \
     (is_sym(cadr(e))) ? caddr(e) : make_lambda(m, cdadr(e), cddr(e)))
 
-#define is_set_definition(e) is_tagged(e, "set!")
+#define is_assignment(e) (is_tagged(e, "set!"))
+#define assignment_variable(e) cadr(e)
+#define assignment_value(e) caddr(e)
 
 // Evaluator developers only
 void push_reg(struct evaluator *m, int reg);

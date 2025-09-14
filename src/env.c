@@ -13,24 +13,24 @@
 #include "match.h"
 
 static expr make_frame(struct machine *m, expr vars, expr vals);
-static expr *frame_lookup(expr frame, expr var);
+static expr frame_lookup(expr frame, expr var);
 
-expr *env_lookup(expr var, expr env)
+expr env_lookup(expr var, expr env)
 {
   expr frame;
-  expr *res;
+  expr res;
 
   while (!is_nil(env))
   {
     frame = env_frame(env);
     res = frame_lookup(frame, var);
-    if (res != NULL)
+    if (!is_false(res))
       return res;
 
     env = env_parent(env);
   }
 
-  return NULL;
+  return FALSE;
 }
 
 expr env_extend(struct machine *m, expr vars, expr vals, expr env)
@@ -44,24 +44,32 @@ expr env_extend(struct machine *m, expr vars, expr vals, expr env)
   return cons(m, frame, env);
 }
 
-expr env_define_variable(struct machine *m, expr var, expr val, expr env, bool create)
+expr env_define_variable(struct machine *m, expr var, expr val, expr env)
 {
   expr frame;
 
   frame = env_frame(env);
   expr bind = assoq(var, frame);
 
-  if (!is_false(bind))
-  {
-    set_cdr(bind, val);
-    return TRUE;
-  }
-  else if (create)
+  if (is_false(bind))
   {
     machine_push(m, env);
     bind = cons(m, var, val);
     machine_pop(m, &env);
     set_car(env, cons(m, bind, env_frame(env)));
+    return TRUE;
+  }
+
+  error("Duplicate variable definition: %s", var.str);
+  return FALSE;
+}
+
+expr env_set_variable(struct machine *m, expr var, expr val, expr env)
+{
+  expr bind = env_lookup(var, env);
+  if (!is_false(bind))
+  {
+    set_cdr(bind, val);
     return TRUE;
   }
   error("Can not set unbound var %s", var.str);
@@ -98,10 +106,7 @@ static expr make_frame(struct machine *m, expr vars, expr vals)
   return bindings;
 }
 
-static expr *frame_lookup(expr frame, expr var)
+static expr frame_lookup(expr frame, expr var)
 {
-  expr bind = assoq(var, frame);
-  if (!is_false(bind))
-    return bind.array + 1;
-  return NULL;
+  return assoq(var, frame);
 }

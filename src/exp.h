@@ -36,18 +36,18 @@ bool is_equal(expr a, expr b); // should dispatch by data type
 bool is_eq(expr a, expr b);    // pointer equality, value equality for symbols
 // bool is_eqv(expr a, expr b);   // pointer equality for non-scalars, value equality for scalars
 
-#define set_car(pr, v)       \
-    do                       \
-    {                        \
-        if (pr.array)        \
-            pr.array[0] = v; \
-    } while (0)
-#define set_cdr(pr, v)       \
-    do                       \
-    {                        \
-        if (pr.array)        \
-            pr.array[1] = v; \
-    } while (0)
+#define set_car(pr, v) \
+  do                   \
+  {                    \
+    if (pr.array)      \
+      pr.array[0] = v; \
+  } while (0)
+#define set_cdr(pr, v)   \
+  do                     \
+  {                      \
+    if ((pr).array)      \
+      (pr).array[1] = v; \
+  } while (0)
 
 #define car(pr) ((is_pair(pr) && pr.array) ? pr.array[0] : NIL) // !is_pair() is actually a contract violation
 #define cdr(pr) ((is_pair(pr) && pr.array) ? pr.array[1] : NIL)

@@ -32,6 +32,10 @@ static void ev_sequence_end(struct evaluator *ev);
 static void ev_definition(struct evaluator *ev);
 static void ev_definition_cont(struct evaluator *ev);
 
+static void ev_apply(struct evaluator *ev);
+static void ev_apply_did_proc(struct evaluator *ev);
+static void ev_apply_did_args(struct evaluator *ev);
+
 static void ev_application(struct evaluator *ev);
 static void ev_appl_did_operator(struct evaluator *ev);
 static void ev_appl_operand_loop(struct evaluator *ev);
@@ -130,6 +134,9 @@ expr eval(struct evaluator *ev, expr exp)
 {
   expr val;
 
+  // Test stack size after evaluation
+  long sp = ev->machine->stack->size;
+
   set_reg(ev, EXP, exp);
   set_reg(ev, CONTINUE, make_cont(NULL));
   ev->goto_fn = eval_dispatch;
@@ -138,6 +145,7 @@ expr eval(struct evaluator *ev, expr exp)
   {
     ((cont_f)ev->goto_fn)(ev);
   }
+  assert(ev->machine->stack->size == sp);
   val = get_reg(ev, VAL);
   return val;
 }
@@ -168,9 +176,13 @@ static void eval_dispatch(struct evaluator *ev)
   {
     ev_lambda(ev);
   }
-  else if (is_definition(exp))
+  else if (is_definition(exp) || is_assignment(exp))
   {
     ev_definition(ev);
+  }
+  else if (is_apply(exp))
+  {
+    ev_apply(ev);
   }
   // Check appl as last condition
   else if (is_application(exp))
@@ -198,17 +210,18 @@ static void ev_quote(struct evaluator *ev)
 
 static void ev_variable(struct evaluator *ev)
 {
-  expr *p;
+  expr p;
   p = env_lookup(get_reg(ev, EXP), get_reg(ev, ENV));
-  if (p == NULL)
+  if (is_false(p))
   {
     error("Unbound variable %s", get_reg(ev, EXP).str);
     set_reg(ev, VAL, NIL);
-    ev->goto_fn = NULL;
+    // ev->goto_fn = NULL; // TODO handle stack unwinding
+    ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
   }
   else
   {
-    set_reg(ev, VAL, *p);
+    set_reg(ev, VAL, cdr(p));
     ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
   }
 }
@@ -220,6 +233,53 @@ static void ev_lambda(struct evaluator *ev)
   set_reg(ev, VAL, make_procedure(ev->machine, get_reg(ev, UNEV), get_reg(ev, EXP), get_reg(ev, ENV)));
 
   ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
+}
+
+static void ev_apply(struct evaluator *ev)
+{
+  push_reg(ev, CONTINUE);
+  push_reg(ev, ENV);
+
+  // Extract procedure and arguments expressions
+  expr exp = get_reg(ev, EXP);
+  expr proc_exp = cadr(exp);  // Second element: the procedure
+  expr args_exp = caddr(exp); // Third element: the argument list
+
+  // Save arguments expression for later
+  set_reg(ev, UNEV, args_exp);
+  push_reg(ev, UNEV);
+
+  // Evaluate procedure expression first
+  set_reg(ev, EXP, proc_exp);
+  set_reg(ev, CONTINUE, make_cont(ev_apply_did_proc));
+  ev->goto_fn = eval_dispatch;
+}
+
+static void ev_apply_did_proc(struct evaluator *ev)
+{
+  // Save procedure in PROC register
+  mov_reg(ev, VAL, PROC);
+
+  // Now evaluate the arguments list expression
+  pop_reg(ev, UNEV);
+  set_reg(ev, EXP, get_reg(ev, UNEV));
+  set_reg(ev, CONTINUE, make_cont(ev_apply_did_args));
+  push_reg(ev, PROC);
+
+  ev->goto_fn = eval_dispatch;
+}
+
+static void ev_apply_did_args(struct evaluator *ev)
+{
+  // Set evaluated args list as ARGL
+  set_reg(ev, ARGL, get_reg(ev, VAL));
+
+  // Restore environment and continuation
+  pop_reg(ev, PROC);
+  pop_reg(ev, ENV);
+
+  // Apply the procedure to arguments
+  ev->goto_fn = apply_dispatch;
 }
 
 static void ev_application(struct evaluator *ev)
@@ -370,7 +430,7 @@ static void apply_dispatch(struct evaluator *ev)
     error("Unknown procedure");
     print_exp(get_reg(ev, PROC));
     printf("\n");
-    ev->goto_fn = NULL;
+    ev->goto_fn = NULL; // TODO handle stack unwinding
   }
 }
 
@@ -389,7 +449,6 @@ static void compound_apply(struct evaluator *ev)
   set_reg(ev, ENV, procedure_env(get_reg(ev, PROC)));
   set_reg(ev, ENV, env_extend(ev->machine, get_reg(ev, UNEV), get_reg(ev, ARGL), get_reg(ev, ENV)));
   set_reg(ev, UNEV, procedure_body(get_reg(ev, PROC)));
-
   ev->goto_fn = ev_sequence;
 }
 
@@ -412,9 +471,21 @@ static void ev_definition_cont(struct evaluator *ev)
   pop_reg(ev, ENV);
   pop_reg(ev, EXP);
   pop_reg(ev, UNEV);
-  env_define_variable(ev->machine, get_reg(ev, UNEV), get_reg(ev, VAL), get_reg(ev, ENV), !(is_set_definition(get_reg(ev, EXP))));
-  set_reg(ev, VAL, mk_num(1));
-  ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
+
+  if (is_assignment(get_reg(ev, EXP)))
+  {
+    set_reg(ev, VAL, env_set_variable(ev->machine, get_reg(ev, UNEV), get_reg(ev, VAL), get_reg(ev, ENV)));
+  }
+  else
+  {
+    set_reg(ev, VAL, env_define_variable(ev->machine, get_reg(ev, UNEV), get_reg(ev, VAL), get_reg(ev, ENV)));
+  }
+
+  if (is_false(get_reg(ev, VAL)))
+    ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
+  // ev->goto_fn = NULL; // TODO handle stack unwinding
+  else
+    ev->goto_fn = (cont_f)get_reg(ev, CONTINUE).value;
 }
 
 static void ev_if(struct evaluator *ev)

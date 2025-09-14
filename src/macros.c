@@ -15,13 +15,7 @@ struct macros_expander *macros_create(struct machine *m)
   expander->machine = m;
   expander->macros = a->cells;
   array_push(a, NIL); // Initially no macros
-  expr head = expander->macros[0];
-  logexpr("INIT macros", head);
-  while (!is_nil(head))
-  {
-    logexpr("INIT macro", caar(head));
-    head = cdr(head);
-  }
+
   return expander;
 }
 

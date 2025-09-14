@@ -29,6 +29,13 @@
 
 (define-syntax let
   (syntax-rules ()
+   ;; Named let
+    ((_ name ((var init) ...) body1 body2 ...)
+     ((letrec ((name (lambda (var ...) body1 body2 ...)))
+        name)
+      init ...))
+
+    ;; Ordinary let
     ((let ((var val) ...) body ...)
      ((lambda (var ...) body ...) val ...))))
 
@@ -39,6 +46,24 @@
     ((_ ((name val) rest ...) body1 body2 ...)
       (let ((name val))
         (let* (rest ...) body1 body2 ...)))))
+
+(define-syntax letrec
+  (syntax-rules ()
+    [(_ ((var init) ...) body1 body2 ...)
+     (let ((var #f) ...)
+       (set! var init) ...
+       body1 body2 ...)]))
+
+(define-syntax letrec*
+  (syntax-rules ()
+    ;; empty case
+    [(_ () body1 body2 ...) 
+     (begin body1 body2 ...)]
+    
+    ;; recursive case
+    [(_ ((var init) rest ...) body1 body2 ...)
+     (let ((var init))
+       (letrec* (rest ...) body1 body2 ...))]))
 
 (define-syntax and
   (syntax-rules ()
