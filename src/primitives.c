@@ -95,6 +95,26 @@ expr op_mul(struct machine *m, expr args)
   return mk_num(prod);
 }
 
+expr op_mod(struct machine *m, expr args)
+{
+  expr x = car(args);
+  expr y = cadr(args);
+
+  if (!(is_num(x) && is_num(y)))
+  {
+    error("Not enough numeric arguments");
+    return FALSE;
+  }
+
+  if (y.intv == 0)
+  {
+    error("Division by zero");
+    return FALSE;
+  }
+
+  return mk_num((x.intv % y.intv));
+}
+
 #pragma mark -
 
 expr op_eq(struct machine *m, expr args)
@@ -448,7 +468,7 @@ expr primitives_env(struct machine *m)
 {
   expr vars, vals;
 
-  vars = listn(m, 33,
+  vars = listn(m, 24,
                mk_sym("+"),
                mk_sym("*"),
                mk_sym("-"),
@@ -460,11 +480,7 @@ expr primitives_env(struct machine *m)
                mk_sym("string?"),
                mk_sym("pair?"),
                mk_sym("symbol?"),
-               mk_sym("zero?"),
-               mk_sym("positive?"),
-               mk_sym("negative?"),
-               mk_sym("odd?"),
-               mk_sym("even?"),
+               mk_sym("mod"),
                mk_sym("make-vector"),
                mk_sym("vector-length"),
                mk_sym("vector-ref"),
@@ -472,18 +488,13 @@ expr primitives_env(struct machine *m)
                mk_sym("car"),
                mk_sym("cdr"),
                mk_sym("cons"),
-               mk_sym("list"),
-               mk_sym("append"),
                mk_sym("display"),
                mk_sym("newline"),
                mk_sym("println"),
-               mk_sym("match-pattern"),
                mk_sym("memq"),
                mk_sym("list-ref"),
-               mk_sym("expand-template"),
-               mk_sym("pattern-vars"),
                NIL);
-  vals = listn(m, 33,
+  vals = listn(m, 24,
                mk_prim(op_add),
                mk_prim(op_mul),
                mk_prim(op_sub),
@@ -495,11 +506,7 @@ expr primitives_env(struct machine *m)
                mk_prim(op_is_string),
                mk_prim(op_is_pair),
                mk_prim(op_is_symbol),
-               mk_prim(op_is_zero),
-               mk_prim(op_is_positive),
-               mk_prim(op_is_negative),
-               mk_prim(op_is_odd),
-               mk_prim(op_is_even),
+               mk_prim(op_mod),
                mk_prim(op_vector_create),
                mk_prim(op_vector_size),
                mk_prim(op_vector_get),
@@ -507,16 +514,11 @@ expr primitives_env(struct machine *m)
                mk_prim(op_car),
                mk_prim(op_cdr),
                mk_prim(op_cons),
-               mk_prim(op_list),
-               mk_prim(op_append),
                mk_prim(op_print),
                mk_prim(op_println),
                mk_prim(op_println),
-               mk_prim(op_match_pattern),
                mk_prim(op_memq),
                mk_prim(op_list_ref),
-               mk_prim(op_expand_template),
-               mk_prim(op_pattern_vars),
                NIL);
   return env_extend(m, vars, vals, NIL);
 }

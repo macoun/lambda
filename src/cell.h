@@ -24,6 +24,7 @@ struct cell
     struct cell *array;
     int intv;
     long longv;
+    double doublev;
     unsigned int uintv;
     unsigned long ulongv;
   };
@@ -46,7 +47,9 @@ extern const struct cell TRUE;
 #define is_compound(e) (is_pair(e) || is_vector(e))
 
 #define mk_cell(t, v) ((struct cell){t, {v}})
-#define mk_num(num) mk_cell(INTEGER, (void *)(long)num)
+#define mk_int(num) ((struct cell){INTEGER, {.longv = (long)num}})
+#define mk_float(num) ((struct cell){FLOAT, {.doublev = (double)num}})
+#define mk_num(num) ((num == (long)num) ? mk_int(num) : mk_float(num))
 #define mk_str(str) mk_cell(STRING, strdup(str))
 #define mk_sym(str) mk_cell(SYMBOL, strdup(str))
 #define mk_prim(func) mk_cell(PRIMITIVE, func)

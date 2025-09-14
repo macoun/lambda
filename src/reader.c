@@ -140,11 +140,26 @@ static expr parse_number(char **sp, int *error)
   expr exp;
 
   s = *sp;
-  assert(isdigit(*s));
+  assert(isdigit(*s) || (*s == '-' && isdigit(*(s + 1))));
 
-  exp = mk_num(strtol(s, sp, 10));
+  char *endptr;
 
-  return exp;
+  // double val = strtod(s, &endptr);
+  // if (endptr != s)
+  // {
+  //   *sp = endptr;
+  //   return mk_float(val);
+  // }
+
+  long intv = strtol(s, &endptr, 10);
+  if (endptr != s)
+  {
+    *sp = endptr;
+    return mk_num(intv);
+  }
+
+  *error = PERR_INV_NUMBER;
+  return NIL;
 }
 
 static expr parse_symbol(char **sp, int *error)
@@ -268,8 +283,12 @@ expr parse_exp(struct machine *m, char **sp, int *error)
   {
     res = parse_string(&s, error);
   }
-  else if (isdigit(ch))
+  else if (isdigit(ch) || (ch == '-' && isdigit(*(s + 1))))
   {
+    // TODO: we have to check for '-' followed by a digit to distinguish from a symbol
+    // like '-foo which is valid, However -2m is also a valid symbol.
+    // We need to assert that all following chars are digits or dots
+    // otherwise it is a symbol.
     res = parse_number(&s, error);
   }
   else if (ch != '\0' && !strspn(s, ";)]"))

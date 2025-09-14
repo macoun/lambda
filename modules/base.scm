@@ -1,17 +1,115 @@
-;; Define a when macro
+;; ---------------------------
+;; Derived syntax
+;; ---------------------------
+
+(define-syntax begin
+  (syntax-rules () 
+    ((_ rest ...) ((lambda () rest ...)))))
+
 (define-syntax when
   (syntax-rules ()
-    ((when test body ...)
-     (if test (begin body ...)))))
+    ((_ test expr ...)
+      (if test (begin expr ...) #f))))
 
-; Define an unless macro
 (define-syntax unless
   (syntax-rules ()
-    ([unless test body ...]
-     (if (not test) (begin body ...)))))
+    ((_ test expr ...)
+      (if (not test) (begin expr ...) #f))))
 
-;; Define a more complex let macro
+(define-syntax cond
+  (syntax-rules (else)
+    ((_ (else expr ...))
+      (begin expr ...))
+    ((_ (test expr ...))
+      (if test (begin expr ...)))
+    ((_ (test expr ...) rest ...)
+      (if test
+          (begin expr ...)
+          (cond rest ...)))))
+
 (define-syntax let
   (syntax-rules ()
     ((let ((var val) ...) body ...)
      ((lambda (var ...) body ...) val ...))))
+
+(define-syntax let*
+  (syntax-rules ()
+    ((_ () body1 body2 ...)
+      (begin body1 body2 ...))
+    ((_ ((name val) rest ...) body1 body2 ...)
+      (let ((name val))
+        (let* (rest ...) body1 body2 ...)))))
+
+(define-syntax and
+  (syntax-rules ()
+    ((_ ) #t)
+    ((_ test) test)
+    ((_ test rest ...)
+      (if test (and rest ...) #f))))
+
+(define-syntax or
+  (syntax-rules ()
+    ((_ ) #f)
+    ((_ test) test)
+    ((_ test rest ...)
+      (let ((x test))
+        (if x x (or rest ...))))))
+
+;; ---------------------------
+;; List utilities
+;; ---------------------------
+
+(define (list . xs) xs)
+
+(define (append xs ys)
+  (if (null? xs)
+      ys
+      (cons (car xs) (append (cdr xs) ys))))
+
+(define (reverse lst)
+  (let loop ((lst lst) (acc '()))
+    (if (null? lst)
+        acc
+        (loop (cdr lst) (cons (car lst) acc)))))
+
+(define (map f lst)
+  (if (null? lst)
+      '()
+      (cons (f (car lst)) (map f (cdr lst)))))
+
+(define (for-each f lst)
+  (if (null? lst)
+      (values) ;; return zero values
+      (begin (f (car lst))
+              (for-each f (cdr lst)))))
+
+;; ---------------------------
+;; Boolean helpers
+;; ---------------------------
+
+(define (not x)
+  (if x #f #t))
+
+;; ---------------------------
+;; Numeric functions
+;; ---------------------------
+
+;; Predicates
+(define (zero? x) (= x 0))
+(define (positive? x) (> x 0))
+(define (negative? x) (< x 0))
+
+;; Parity
+(define (even? x) (= (mod x 2) 0))
+(define (odd? x) (not (even? x)))
+
+;; Absolute value
+(define (abs x)
+  (if (negative? x) (- x) x))
+
+;; Comparison extensions
+(define (<= x y) (or (< x y) (= x y)))
+(define (>= x y) (or (> x y) (= x y)))
+
+(define (min x y) (if (< x y) x y))
+(define (max x y) (if (> x y) x y))

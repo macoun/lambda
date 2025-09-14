@@ -24,7 +24,6 @@
 const long DEFAULT_STACK_SIZE = 1024 * 1;
 
 static void eval_dispatch(struct evaluator *ev);
-static void ev_begin(struct evaluator *ev);
 
 static void ev_sequence(struct evaluator *ev);
 static void ev_sequence_cont(struct evaluator *ev);
@@ -173,10 +172,6 @@ static void eval_dispatch(struct evaluator *ev)
   {
     ev_definition(ev);
   }
-  else if (is_begin(exp))
-  {
-    ev_begin(ev);
-  }
   // Check appl as last condition
   else if (is_application(exp))
   {
@@ -295,13 +290,6 @@ static void ev_appl_accum_last_arg(struct evaluator *ev)
   set_reg(ev, ARGL, adjoin_arg(ev->machine, get_reg(ev, VAL), get_reg(ev, ARGL)));
   pop_reg(ev, PROC);
   ev->goto_fn = apply_dispatch;
-}
-
-static void ev_begin(struct evaluator *ev)
-{
-  set_reg(ev, UNEV, begin_actions(get_reg(ev, EXP)));
-  push_reg(ev, CONTINUE);
-  ev->goto_fn = ev_sequence;
 }
 
 #define TAIL_RECURSIVE 1

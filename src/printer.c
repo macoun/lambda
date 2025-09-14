@@ -77,7 +77,10 @@ void print_exp(expr exp)
   }
   else if (is_num(exp))
   {
-    printf(COLOR_MAGENTA "%ld" COLOR_RESET, exp.longv);
+    if (exp.type == FLOAT)
+      printf(COLOR_MAGENTA "%f" COLOR_RESET, exp.doublev);
+    else
+      printf(COLOR_MAGENTA "%ld" COLOR_RESET, exp.longv);
   }
   else if (is_nil(exp))
   {
