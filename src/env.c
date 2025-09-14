@@ -10,9 +10,9 @@
 #include "printer.h"
 #include "logger.h"
 #include "evaluator.h"
+#include "match.h"
 
 static expr make_frame(struct machine *m, expr vars, expr vals);
-static expr frame_bind(struct machine *m, expr frame, expr var, expr val);
 static expr *frame_lookup(expr frame, expr var);
 
 expr *env_lookup(expr var, expr env)
@@ -79,28 +79,21 @@ expr env_parent(expr env)
 // Frame
 static expr make_frame(struct machine *m, expr vars, expr vals)
 {
-  expr frame = NIL;
+  if (is_nil(vars) && is_nil(vals))
+    return NIL;
 
-  while (is_pair(vars) && is_pair(vals))
+  memory_enable_gc(m->memory, false);
+  expr bindings = match_pattern(m, vars, vals, NIL);
+  if (is_false(bindings))
   {
-    if (!is_sym(car(vars)))
-    {
-      error("Non-symbol in variable list");
-      print_exp(car(vars));
-      printf("\n");
-      return FALSE;
-    }
-
-    machine_push(m, vars);
-    machine_push(m, vals);
-    frame = frame_bind(m, frame, car(vars), car(vals));
-    machine_pop(m, &vals);
-    machine_pop(m, &vars);
-
-    vars = cdr(vars);
-    vals = cdr(vals);
+    error("Mismatch in number of variables and values");
+    print_exp(vars);
+    printf("\n");
+    print_exp(vals);
+    printf("\n");
   }
-  return frame;
+  memory_enable_gc(m->memory, true);
+  return bindings;
 }
 
 static expr *frame_lookup(expr frame, expr var)
@@ -109,13 +102,4 @@ static expr *frame_lookup(expr frame, expr var)
   if (!is_false(bind))
     return bind.array + 1;
   return NULL;
-}
-
-static expr frame_bind(struct machine *m, expr frame, expr var, expr val)
-{
-  machine_push(m, frame);
-  expr bind = cons(m, var, val);
-  machine_pop(m, &frame);
-
-  return cons(m, bind, frame);
 }

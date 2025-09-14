@@ -29,7 +29,7 @@ static const bool _true = true;
 const struct cell TRUE = mk_cell(CUSTOM, (void *)&_true);
 
 // Configuration constants
-#define DEFAULT_SEGMENT_SIZE 128 * 5
+#define DEFAULT_SEGMENT_SIZE 1024 * 10
 #define SEGMENT_MAX_IDLE_COUNT 2
 
 /*-----------------------------------------------------------------------*/
@@ -491,12 +491,12 @@ void memory_enable_gc(struct memory *mem, bool enable)
   mem->gc_enabled = enable;
   if (enable)
   {
-    info("Garbage collection enabled");
-    gc(mem);
+    // info("Garbage collection enabled");
+    // gc(mem);
   }
   else
   {
-    info("Garbage collection disabled");
+    // info("Garbage collection disabled");
   }
 }
 
@@ -514,7 +514,7 @@ static void mem_run_gc(struct memory *mem)
 
   if (!mem || !mem->gc_enabled)
   {
-    info("Garbage collection disabled. Skipping GC.");
+    // info("Garbage collection disabled. Skipping GC.");
     return;
   }
 

@@ -138,21 +138,9 @@ expr macros_preprocess(struct macros_expander *expander, expr source)
   struct machine *m = expander->machine;
   memory_enable_gc(m->memory, false);
   logexpr("Source", source);
-  expr head = expander->macros[0];
-  while (!is_nil(head))
-  {
-    logexpr("Before collecting macro", caar(head));
-    head = cdr(head);
-  }
   source = macros_collect(expander, source);
   if (is_false(source))
     return FALSE;
-  head = expander->macros[0];
-  while (!is_nil(head))
-  {
-    logexpr("Collected macro", caar(head));
-    head = cdr(head);
-  }
   logexpr("Source (preprocessed)", source);
   source = macros_expand(expander, source);
   logexpr("Source (expanded)", source);

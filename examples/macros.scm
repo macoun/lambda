@@ -120,3 +120,19 @@
   (display "-------------------")
   (newline))
 ;((lambda () (display "Done with macros examples.") (newline) (display "-------------------") (newline)))
+
+(define-syntax cond
+  (syntax-rules (else)
+    ((_ (else expr ...))
+      (begin expr ...))
+    ((_ (test expr ...))
+      (if test (begin expr ...)))
+    ((_ (test expr ...) rest ...)
+      (if test
+          (begin expr ...)
+          (cond rest ...)))))
+
+(cond
+  ((> 3 2) (display "3 is greater than 2") (newline))
+  ((< 3 2) (display "3 is less than 2") (newline))
+  (else (display "Neither condition is true") (newline)))

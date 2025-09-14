@@ -54,7 +54,7 @@
 (define (iter v i)
   (if [< i (vector-length v)]
     (begin
-      (display i (vector-ref v i))
+      (display (vector-ref v i))
       (newline)
       (iter v (+ i 1)))))
 
