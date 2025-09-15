@@ -111,6 +111,12 @@
       (car lst)
       (list-ref (cdr lst) (- n 1))))
 
+(define (length lst)
+  (let loop ((lst lst) (count 0))
+    (if (null? lst)
+        count
+        (loop (cdr lst) (+ 1 count)))))
+
 ;; membership predicates
 (define (memq x lst)
   (cond
@@ -157,7 +163,7 @@
 
 (define (for-each f lst)
   (if (null? lst)
-      (values) ;; return zero values
+      '() ;(values) ;; return zero values
       (begin (f (car lst))
               (for-each f (cdr lst)))))
 
@@ -171,6 +177,21 @@
 ;; ---------------------------
 ;; Numeric functions
 ;; ---------------------------
+
+;; Equality
+(define (equal? a b)
+  (cond
+    ((eqv? a b) #t)
+    ((and (pair? a) (pair? b))
+     (and (equal? (car a) (car b))
+          (equal? (cdr a) (cdr b))))
+    ((and (vector? a) (vector? b)
+          (eqv? (vector-length a) (vector-length b)))
+     (let loop ((i 0))
+       (or (eqv? i (vector-length a))
+           (and (equal? (vector-ref a i) (vector-ref b i))
+                (loop (+ i 1))))))
+    (else #f)))
 
 ;; Predicates
 (define (zero? x) (= x 0))
@@ -191,3 +212,49 @@
 
 (define (min x y) (if (< x y) x y))
 (define (max x y) (if (> x y) x y))
+
+;; ----------------------------
+;; car cdr variants
+;; ----------------------------
+;; depth 2
+(define (caar x) (car (car x)))
+(define (cadr x) (car (cdr x)))
+(define (cdar x) (cdr (car x)))
+(define (cddr x) (cdr (cdr x)))
+
+;; depth 3
+(define (caaar x) (caar (car x)))
+(define (caadr x) (caar (cdr x)))
+(define (cadar x) (cadr (car x)))
+(define (caddr x) (cadr (cdr x)))
+(define (cdaar x) (cdar (car x)))
+(define (cdadr x) (cdar (cdr x)))
+(define (cddar x) (cddr (car x)))
+(define (cdddr x) (cddr (cdr x)))
+
+;; depth 4
+(define (caaaar x) (caaar (car x)))
+(define (caaadr x) (caaar (cdr x)))
+(define (caadar x) (caadr (car x)))
+(define (caaddr x) (caadr (cdr x)))
+(define (cadaar x) (cadar (car x)))
+(define (cadadr x) (cadar (cdr x)))
+(define (caddar x) (caddr (car x)))
+(define (cadddr x) (caddr (cdr x)))
+
+(define (cdaaar x) (cdaar (car x)))
+(define (cdaadr x) (cdaar (cdr x)))
+(define (cdadar x) (cdadr (car x)))
+(define (cdaddr x) (cdadr (cdr x)))
+(define (cddaar x) (cddar (car x)))
+(define (cddadr x) (cddar (cdr x)))
+(define (cdddar x) (cdddr (car x)))
+(define (cddddr x) (cdddr (cdr x)))
+
+;; ---------------------------
+;; Other utilities
+;; ---------------------------
+(define (displayln . args)
+  (begin 
+        (for-each display args)
+         (newline)))

@@ -87,7 +87,7 @@ expr macros_expand(struct macros_expander *expander, expr exp)
 static expr macros_transform(struct machine *m, expr transformer, expr exp)
 {
   expr patterns = syntax_transformer_patterns(transformer);
-  logexpr("All Patterns", patterns);
+  // logexpr("All Patterns", patterns);
   expr literals = syntax_transformer_literals(transformer);
   while (!is_nil(patterns))
   {
@@ -95,17 +95,17 @@ static expr macros_transform(struct machine *m, expr transformer, expr exp)
     expr template = syntax_template(car(patterns));
 
     expr bindings = match_pattern(m, pattern, exp, literals);
-    logexpr("Transforming", exp);
-    logexpr("With pattern", pattern);
-    logexpr("Got bindings", bindings);
+    // logexpr("Transforming", exp);
+    // logexpr("With pattern", pattern);
+    // logexpr("Got bindings", bindings);
     if (!is_false(bindings))
     {
       expr patternvars = pattern_depths(m, pattern, literals);
       return expand_template(m, template, 0, bindings, patternvars, NIL);
     }
-    logexpr("Patterns", patterns);
+    // logexpr("Patterns", patterns);
     patterns = cdr(patterns);
-    logexpr("Patterns after", patterns);
+    // logexpr("Patterns after", patterns);
   }
   error("No pattern matched for");
   print_exp(exp);
@@ -136,7 +136,7 @@ static bool macros_add_syntax_transformer(struct macros_expander *expander, expr
   logexpr("For name", name);
   env_define_variable(m, name, transformer, expander->macros[0]);
   // expander->macros[0] = cons(m, cons(m, name, transformer), expander->macros[0]);
-  logexpr("Current macros env", expander->macros[0]);
+  // logexpr("Current macros env", expander->macros[0]);
   info("Defined env array pos %p", expander->macros[0].array);
   return true;
 }

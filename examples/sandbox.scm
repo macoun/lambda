@@ -51,22 +51,22 @@
 
 ;-----------------------------------
 ; Recursive loop
-(define (iter v i)
+(define (iter2 v i)
   (if [< i (vector-length v)]
     (begin
       (display (vector-ref v i))
       (newline)
-      (iter v (+ i 1)))))
+      (iter2 v (+ i 1)))))
 
 (define (run-vector-test)
   (begin
     (define v (make-vector 'A 'B 1 "hello" "world"))
     (display 'Length= [vector-length v])
     (newline)
-    (iter v 0)))
+    (iter2 v 0)))
 
 (run-vector-test)
-
+((lambda () (define iter2 'scope)))
 ;-----------------------------------
 ; Iterative loop
 (define (iter n f)

@@ -31,7 +31,8 @@
 
 void repl(struct evaluator *ev, struct macros_expander *expander, int argc, const char *argv[])
 {
-  char buffer[MAX_LINE_SIZE], *s;
+  char buffer[MAX_LINE_SIZE];
+  const char *s;
   char stop;
   expr exp;
   int error;

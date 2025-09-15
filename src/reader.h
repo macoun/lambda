@@ -20,6 +20,8 @@
 #define PERR_INV_NUMBER 7     /* Invalid number syntax */
 #define PERR_TERM 100
 
-expr parse_exp(struct machine *m, char **sp, int *error);
+expr parse_exp(struct machine *m, const char **sp, int *error);
+expr parse_from_file(struct machine *m, const char *fname, int *err);
+expr parse_from_string(struct machine *m, const char *buffer, int *err);
 
 #endif /* reader_h */

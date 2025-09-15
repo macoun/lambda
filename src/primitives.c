@@ -14,6 +14,7 @@
 #include "match.h"
 #include "expand.h"
 #include "pattern.h"
+#include "evaluator.h"
 
 #include <string.h>
 
@@ -292,6 +293,17 @@ expr op_is_symbol(struct machine *m, expr args)
   return is_sym(car(args)) ? TRUE : FALSE;
 }
 
+expr op_is_procedure(struct machine *m, expr args)
+{
+  expr proc = car(args);
+  return ((is_procedure(proc)) || (is_prim(proc)) || (is_continuation(proc))) ? TRUE : FALSE;
+}
+
+expr op_is_vector(struct machine *m, expr args)
+{
+  return is_vector(car(args)) ? TRUE : FALSE;
+}
+
 #pragma mark -
 
 expr op_is_zero(struct machine *m, expr args)
@@ -464,15 +476,47 @@ expr op_pattern_vars(struct machine *m, expr args)
   return pattern_depths(m, pattern, literals);
 }
 
+expr op_environment(struct machine *m, expr args)
+{
+  return machine_get_reg(m, ENV);
+}
+
+expr op_machine_snapshot(struct machine *m, expr args)
+{
+  return machine_snapshot(m);
+}
+
+expr op_machine_restore(struct machine *m, expr args)
+{
+  expr snapshot = car(args);
+  expr val = cadr(args);
+  if (machine_restore(m, snapshot))
+  {
+    logexpr("Restored machine snapshot with value", val);
+    machine_set_reg(m, VAL, val);
+    return TRUE;
+  }
+  return FALSE;
+}
+
+expr op_exit(struct machine *m, expr args)
+{
+  expr code = car(args);
+  machine_push(m, make_cont(NULL));
+  logexpr("Exiting with code", code);
+  return mk_exit(m);
+}
+
 expr primitives_env(struct machine *m)
 {
   expr vars, vals;
 
-  vars = listn(m, 24,
+  vars = listn(m, 29,
                mk_sym("+"),
                mk_sym("*"),
                mk_sym("-"),
                mk_sym("eq?"),
+               mk_sym("eqv?"),
                mk_sym(">"),
                mk_sym("<"),
                mk_sym("null?"),
@@ -480,6 +524,8 @@ expr primitives_env(struct machine *m)
                mk_sym("string?"),
                mk_sym("pair?"),
                mk_sym("symbol?"),
+               mk_sym("procedure?"),
+               mk_sym("vector?"),
                mk_sym("mod"),
                mk_sym("make-vector"),
                mk_sym("vector-length"),
@@ -491,13 +537,18 @@ expr primitives_env(struct machine *m)
                mk_sym("display"),
                mk_sym("newline"),
                mk_sym("println"),
-               mk_sym("memq"),
-               mk_sym("list-ref"),
+               mk_sym("env"),
+               mk_sym("machine-snapshot"),
+               mk_sym("machine-restore"),
+               mk_sym("exit"),
+               //  mk_sym("memq"),
+               //  mk_sym("list-ref"),
                NIL);
-  vals = listn(m, 24,
+  vals = listn(m, 29,
                mk_prim(op_add),
                mk_prim(op_mul),
                mk_prim(op_sub),
+               mk_prim(op_eq),
                mk_prim(op_eq),
                mk_prim(op_gt),
                mk_prim(op_lt),
@@ -506,6 +557,8 @@ expr primitives_env(struct machine *m)
                mk_prim(op_is_string),
                mk_prim(op_is_pair),
                mk_prim(op_is_symbol),
+               mk_prim(op_is_procedure),
+               mk_prim(op_is_vector),
                mk_prim(op_mod),
                mk_prim(op_vector_create),
                mk_prim(op_vector_size),
@@ -517,8 +570,12 @@ expr primitives_env(struct machine *m)
                mk_prim(op_print),
                mk_prim(op_println),
                mk_prim(op_println),
-               mk_prim(op_memq),
-               mk_prim(op_list_ref),
+               mk_prim(op_environment),
+               mk_prim(op_machine_snapshot),
+               mk_prim(op_machine_restore),
+               mk_prim(op_exit),
+               //  mk_prim(op_memq),
+               //  mk_prim(op_list_ref),
                NIL);
   return env_extend(m, vars, vals, NIL);
 }

@@ -71,7 +71,7 @@ void print_exp(expr exp)
   {
     printf(COLOR_YELLOW "\"%s\"" COLOR_RESET, exp.str);
   }
-  else if (is_sym(exp))
+  if (is_sym(exp))
   {
     printf("%s", exp.str);
   }

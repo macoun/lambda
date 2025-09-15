@@ -16,9 +16,18 @@
 #include <assert.h>
 #include <stdarg.h>
 
-static expr parse_pair(struct machine *m, char **sp, char *brk, int *error)
+static expr parse_pair(struct machine *m, const char **sp, char *brk, int *error);
+static expr parse_quote(struct machine *m, const char **sp, int *error);
+static expr parse_string(const char **sp, int *error);
+static expr parse_number(const char **sp, int *error);
+static expr parse_symbol(const char **sp, int *error);
+static expr parse_quasiquote(struct machine *m, const char **sp, int *error);
+static expr parse_unquote(struct machine *m, const char **sp, int *error);
+static char *read_file(const char *fname);
+
+static expr parse_pair(struct machine *m, const char **sp, char *brk, int *error)
 {
-  char *s;
+  const char *s;
   expr first, last = NIL, res, tmp;
   int lastexp;
 
@@ -81,9 +90,9 @@ static expr parse_pair(struct machine *m, char **sp, char *brk, int *error)
   return first;
 }
 
-static expr parse_quote(struct machine *m, char **sp, int *error)
+static expr parse_quote(struct machine *m, const char **sp, int *error)
 {
-  char *s;
+  const char *s;
   expr exp;
 
   s = *sp;
@@ -104,9 +113,9 @@ static expr parse_quote(struct machine *m, char **sp, int *error)
   return exp;
 }
 
-static expr parse_string(char **sp, int *error)
+static expr parse_string(const char **sp, int *error)
 {
-  char *s;
+  const char *s;
   expr exp;
   char esc;
 
@@ -134,9 +143,10 @@ static expr parse_string(char **sp, int *error)
   return exp;
 }
 
-static expr parse_number(char **sp, int *error)
+static expr parse_number(const char **sp, int *error)
 {
-  char *endptr, *s;
+  const char *s;
+  char *endptr;
 
   s = *sp;
   assert(isdigit(*s) || (*s == '-' && isdigit(*(s + 1))));
@@ -159,7 +169,7 @@ static expr parse_number(char **sp, int *error)
   return NIL;
 }
 
-static expr parse_symbol(char **sp, int *error)
+static expr parse_symbol(const char **sp, int *error)
 {
   char *s;
   expr exp;
@@ -178,9 +188,9 @@ static expr parse_symbol(char **sp, int *error)
   return exp;
 }
 
-static expr parse_quasiquote(struct machine *m, char **sp, int *error)
+static expr parse_quasiquote(struct machine *m, const char **sp, int *error)
 {
-  char *s;
+  const char *s;
   expr exp;
 
   s = *sp;
@@ -201,9 +211,9 @@ static expr parse_quasiquote(struct machine *m, char **sp, int *error)
   return exp;
 }
 
-static expr parse_unquote(struct machine *m, char **sp, int *error)
+static expr parse_unquote(struct machine *m, const char **sp, int *error)
 {
-  char *s;
+  const char *s;
   expr exp;
   char *symbol_name = "unquote";
 
@@ -231,10 +241,10 @@ static expr parse_unquote(struct machine *m, char **sp, int *error)
   *sp = s;
   return exp;
 }
-expr parse_exp(struct machine *m, char **sp, int *error)
+expr parse_exp(struct machine *m, const char **sp, int *error)
 {
   expr res;
-  char *s;
+  const char *s;
   char ch;
   size_t invlen;
 
@@ -316,4 +326,65 @@ expr parse_exp(struct machine *m, char **sp, int *error)
 
   *sp = s;
   return res;
+}
+
+#pragma mark -
+
+expr parse_from_string(struct machine *m, const char *buffer, int *err)
+{
+  expr exp, source = NIL;
+  memory_enable_gc(m->memory, false);
+
+  for (const char *p = buffer; *p != '\0';)
+  {
+    exp = parse_exp(m, &p, err);
+
+    if (*err == PERR_FIN)
+      break;
+
+    if (*err != 0)
+      return FALSE;
+
+    source = cons(m, exp, source);
+  }
+
+  source = list_reverse(m, source);
+  memory_enable_gc(m->memory, true);
+  return source;
+}
+
+expr parse_from_file(struct machine *m, const char *fname, int *err)
+{
+  char *buffer;
+  expr source;
+
+  buffer = read_file(fname);
+  source = parse_from_string(m, buffer, err);
+  free(buffer);
+
+  return source;
+}
+
+static char *read_file(const char *fname)
+{
+  char *buffer;
+  long size;
+  FILE *f;
+
+  f = fopen(fname, "r");
+  if (f == NULL)
+  {
+    fprintf(stderr, "Could not open %s\n", fname);
+    return NULL;
+  }
+
+  fseek(f, 0L, SEEK_END);
+  size = ftell(f);
+  rewind(f);
+
+  buffer = calloc(size + 1, sizeof(char));
+  fread(buffer, 1, size, f);
+  *(buffer + size) = '\0';
+
+  return buffer;
 }

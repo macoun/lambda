@@ -22,13 +22,13 @@ struct evaluator
 
 enum
 {
-  EXP,
-  ENV,
-  UNEV,
-  ARGL,
-  PROC,
-  CONTINUE,
-  VAL
+  EXP,      // Current expression
+  ENV,      // Current environment
+  UNEV,     // Unevaluated expressions (for sequences)
+  ARGL,     // Argument list (for procedure application)
+  PROC,     // Procedure to apply
+  CONTINUE, // Continuation (what to do after current evaluation)
+  VAL       // Value of the last evaluation
 };
 
 typedef void (*cont_f)(struct evaluator *);
@@ -37,8 +37,6 @@ typedef expr (*primitive_f)(struct machine *, expr);
 struct evaluator *evaluator_create();
 void evaluator_destroy(struct evaluator *ev);
 expr eval(struct evaluator *ev, expr exp);
-
-void add_primitives(struct machine *m, expr names, expr funcs);
 
 #define make_cont(f) mk_cell(CUSTOM, f)
 
@@ -90,6 +88,12 @@ void add_primitives(struct machine *m, expr names, expr funcs);
 #define procedure_params(p) cadr(p)
 #define procedure_body(p) caddr(p)
 #define procedure_env(p) car(cdddr(p))
+
+// Continuation
+#define is_continuation(e) is_tagged(e, "continuation")
+#define make_continuation(m, snap) \
+  listn(m, 2, mk_sym("continuation"), snap)
+#define continuation_snapshot(c) cadr(c)
 
 // Macro definition
 #define is_macro_definition(e) is_tagged(e, "define-macro")
@@ -151,6 +155,14 @@ void add_primitives(struct machine *m, expr names, expr funcs);
 #define is_assignment(e) (is_tagged(e, "set!"))
 #define assignment_variable(e) cadr(e)
 #define assignment_value(e) caddr(e)
+
+// call/cc
+#define is_callcc(e) is_tagged(e, "call/cc")
+#define callcc_proc(e) cadr(e)
+
+// Exit
+#define mk_exit(m) mk_cell(CUSTOM, .intv = 1)
+#define is_exit(e) (e.type == CUSTOM && e.intv == 1)
 
 // Evaluator developers only
 void push_reg(struct evaluator *m, int reg);

@@ -3,16 +3,18 @@
 
 #include "cell.h"
 #include <stdlib.h>
+#include <stdbool.h>
 
 struct array
 {
-    struct cell *cells; // Array of cells for stack storage
-    size_t size;        // Current stack pointer (number of items)
-    size_t capacity;    // Maximum capacity of stack
+  struct cell *cells; // Array of cells for stack storage
+  size_t size;        // Current stack pointer (number of items)
+  size_t capacity;    // Maximum capacity of stack
 };
 
 // Creation/destruction
 struct array *array_create(size_t initial_capacity);
+struct array *array_copy(const struct array *src, bool compact);
 void array_destroy(struct array *col);
 
 // Operations

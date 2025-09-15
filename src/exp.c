@@ -38,7 +38,9 @@ bool is_equal(expr a, expr b)
     {
       return !strcmp(a.str, b.str);
     }
+    return a.value == b.value;
   }
+
   return 0;
 }
 

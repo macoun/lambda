@@ -17,99 +17,36 @@
 #include "machine.h"
 #include "repl.h"
 #include "macros.h"
-
-char *read_file(const char *fname)
-{
-  char *buffer;
-  long size;
-  FILE *f;
-
-  f = fopen(fname, "r");
-  if (f == NULL)
-  {
-    fprintf(stderr, "Could not open %s\n", fname);
-    return NULL;
-  }
-
-  fseek(f, 0L, SEEK_END);
-  size = ftell(f);
-  rewind(f);
-
-  buffer = calloc(size + 1, sizeof(char));
-  fread(buffer, 1, size, f);
-  *(buffer + size) = '\0';
-
-  return buffer;
-}
-
-expr read_exp_from_file(struct machine *m, const char *fname)
-{
-  char *buffer, *p;
-  expr exp, source;
-  int err;
-
-  source = NIL;
-  buffer = read_file(fname);
-  p = buffer;
-  memory_enable_gc(m->memory, false);
-  for (; *p != '\0';)
-  {
-    exp = parse_exp(m, &p, &err);
-    if (err == PERR_FIN)
-      break;
-
-    if (err != 0)
-    {
-      error("Error: %d\n", err);
-      source = FALSE;
-      break;
-    }
-
-    machine_push(m, exp);
-
-    source = cons(m, exp, source);
-
-    machine_pop(m, &exp);
-  }
-
-  free(buffer);
-  if (!is_false(source))
-    source = list_reverse(m, source);
-  machine_push(m, source);
-  memory_enable_gc(m->memory, false);
-  machine_pop(m, &source);
-  return source;
-}
+#include "primitives.h"
+#include "env.h"
 
 void evaluate_expressions(struct evaluator *ev, expr source)
 {
   struct machine *m = ev->machine;
-
-  expr current = source;
-  while (!is_nil(current))
-  {
-    expr exp = car(current);
-    machine_push(m, current);
-    eval(ev, exp);
-    machine_pop(m, &current);
-    current = cdr(current);
-  }
+  expr lambda = cons(m, mk_sym("lambda"), cons(m, NIL, source));
+  expr appl = cons(m, lambda, NIL);
+  eval(ev, appl);
 }
 
 int evaluate_file(struct evaluator *ev, struct macros_expander *expander, const char *fname)
 {
-  expr source = read_exp_from_file(ev->machine, fname);
-  if (is_false(source))
-    return -1;
+  int err = 0;
+  expr source = parse_from_file(ev->machine, fname, &err);
+  if (err != PERR_FIN && err != PERR_OK)
+  {
+    error("Error parsing file %s: %d", fname, err);
+    return err;
+  }
   source = macros_preprocess(expander, source);
   if (is_false(source))
-    return -1;
+    return err;
   evaluate_expressions(ev, source);
-  return 0;
+  return err;
 }
 
 void load_modules(struct evaluator *ev, struct macros_expander *expander, const char *modules_dir)
 {
+  // expr env = primitives_env(ev->machine);
   char fname[1024];
   snprintf(fname, sizeof(fname), "%s/base.scm", modules_dir);
   info("Loading base module from %s", fname);
@@ -144,6 +81,11 @@ bool find_modules_dir(const char *program_path, char *dest)
   snprintf(dest, sizeof(buffer), "%s/../modules", dir);
 
   return (stat(dir, &sb) == 0 && S_ISDIR(sb.st_mode));
+}
+
+void add_primitives(struct machine *m, expr names, expr funcs)
+{
+  machine_set_reg(m, ENV, env_extend(m, names, funcs, machine_get_reg(m, ENV)));
 }
 
 int main(int argc, const char *argv[])
