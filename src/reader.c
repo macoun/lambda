@@ -137,8 +137,7 @@ static expr parse_string(const char **sp, int *error)
     s++;
   }
 
-  exp = mk_cell(STRING,
-                strndup(*sp + 1, s - (*sp) - 1));
+  exp = mk_str(strndup(*sp + 1, s - (*sp) - 1));
   *sp = s + 1;
   return exp;
 }
@@ -177,12 +176,12 @@ static expr parse_symbol(const char **sp, int *error)
   s = strpbrk(*sp, "\t\r\n()[]\"'`, ");
   if (s != NULL)
   {
-    exp = mk_cell(SYMBOL, strndup(*sp, s - (*sp)));
+    exp = mk_sym(strndup(*sp, s - (*sp)));
     *sp = s;
   }
   else
   {
-    exp = mk_cell(SYMBOL, strdup(*sp));
+    exp = mk_sym(strdup(*sp));
     *sp = *sp + strlen(*sp);
   }
   return exp;

@@ -22,11 +22,11 @@
 /* Constants and Types                                                   */
 /*-----------------------------------------------------------------------*/
 
-const struct cell NIL = mk_cell(0, NULL);
+const struct cell NIL = mk_single_cell(0, {.value = NULL});
 static const bool _false = false;
-const struct cell FALSE = mk_cell(CUSTOM, (void *)&_false);
+const struct cell FALSE = mk_single_cell(CUSTOM, {.value = (void *)&_false});
 static const bool _true = true;
-const struct cell TRUE = mk_cell(CUSTOM, (void *)&_true);
+const struct cell TRUE = mk_single_cell(CUSTOM, {.value = (void *)&_true});
 
 // Configuration constants
 #define DEFAULT_SEGMENT_SIZE 1024 * 10

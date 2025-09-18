@@ -258,3 +258,8 @@
   (begin 
         (for-each display args)
          (newline)))
+
+(define (assert-equal expected actual message)
+  (if (equal? expected actual)
+      (displayln "PASS: " message)
+      (displayln "FAIL: " message)))

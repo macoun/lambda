@@ -5,20 +5,14 @@
                 (machine-restore snap v))))
     (set! snap (machine-snapshot))
     (f k)))
-(define (call/cc2 f)
-  (let ((snap (machine-snapshot)))
-    (displayln "IS vector? " (vector? (car snap)) (length snap))
-    (displayln "Captured snapshot... Stack: " (vector-length (car snap)) " Regs: " (vector-length (cdr snap)))
-    (f (lambda (v)
-    (displayln "Continuation called with value:" v)
-    (displayln "Restoring snapshot... Stack count: " (vector-length (car snap)) " Regs count: " (vector-length (cdr snap)))
-         (machine-restore snap v)))))
-
-
-(define (assert-equal expected actual description)
-  (if (equal? expected actual)
-      (displayln "PASS: " description)
-      (displayln "FAIL: " description)))
+; (define (call/cc2 f)
+;   (let ((snap (machine-snapshot)))
+;     (displayln "IS vector? " (vector? (car snap)) (length snap))
+;     (displayln "Captured snapshot... Stack: " (vector-length (car snap)) " Regs: " (vector-length (cdr snap)))
+;     (f (lambda (v)
+;     (displayln "Continuation called with value:" v)
+;     (displayln "Restoring snapshot... Stack count: " (vector-length (car snap)) " Regs count: " (vector-length (cdr snap)))
+;          (machine-restore snap v)))))
 
 (let ((result (call/cc (lambda (k) 42)))) ; should never be reached
   (assert-equal 42 result "Zero Test"))

@@ -3,7 +3,14 @@
 
 enum cell_type
 {
+  SINGLE = 0,
   MOVED = 1,
+  STRUCT = 2,
+  ARRAY = 3,
+};
+
+enum expr_type
+{
   INTEGER = 2,
   FLOAT = 3,
   SYMBOL = 4,
@@ -11,12 +18,14 @@ enum cell_type
   PAIR = 6,
   VECTOR = 7,
   PRIMITIVE = 8,
-  CUSTOM = 9
+  CUSTOM = 9,
+  SYMBOL_SCOPED = 10
 };
 
 struct cell
 {
-  enum cell_type type;
+  enum cell_type cell_type;
+  enum expr_type type;
   union
   {
     void *value;
@@ -35,8 +44,8 @@ extern const struct cell FALSE;
 extern const struct cell TRUE;
 
 #define is_nil(e) (e.type == 0 && e.array == NULL)
-#define is_false(e) (e.type == CUSTOM && e.array == FALSE.array)
-#define is_real_true(e) (e.type == CUSTOM && e.array == TRUE.array)
+#define is_false(e) (e.type == CUSTOM && e.value == FALSE.value)
+#define is_real_true(e) (e.type == CUSTOM && e.value == TRUE.value)
 #define is_pair(e) ((e).type == PAIR)
 #define is_sym(e) ((e).type == SYMBOL)
 #define is_str(e) ((e).type == STRING)
@@ -44,17 +53,16 @@ extern const struct cell TRUE;
 #define is_prim(e) ((e).type == PRIMITIVE)
 #define is_custom(e) ((e).type == CUSTOM)
 #define is_vector(e) ((e).type == VECTOR)
-#define is_compound(e) (is_pair(e) || is_vector(e))
 
-#define mk_cell(t, v) ((struct cell){t, {v}})
-#define mk_int(num) ((struct cell){INTEGER, {.longv = (long)num}})
-#define mk_float(num) ((struct cell){FLOAT, {.doublev = (double)num}})
+#define mk_cell(ct, t, v) ((struct cell){.cell_type = ct, .type = t, v})
+#define mk_single_cell(t, v) mk_cell(SINGLE, t, v)
+
+#define mk_int(num) mk_cell(SINGLE, INTEGER, .longv = (long)num)
+#define mk_float(num) mk_cell(SINGLE, FLOAT, .doublev = (double)num)
 #define mk_num(num) ((num == (long)num) ? mk_int(num) : mk_float(num))
-#define mk_str(str) mk_cell(STRING, strdup(str))
-#define mk_sym(str) mk_cell(SYMBOL, strdup(str))
-#define mk_prim(func) mk_cell(PRIMITIVE, func)
-
-#define has_moved(e) ((e).type == MOVED)
+#define mk_str(str) mk_single_cell(STRING, {.value = strdup(str)})
+#define mk_sym(str) mk_single_cell(SYMBOL, {.value = strdup(str)})
+#define mk_prim(func) mk_single_cell(PRIMITIVE, {.value = func})
 
 #define vect_set(vect, idx, item) \
   do                              \

@@ -38,7 +38,7 @@ struct evaluator *evaluator_create();
 void evaluator_destroy(struct evaluator *ev);
 expr eval(struct evaluator *ev, expr exp);
 
-#define make_cont(f) mk_cell(CUSTOM, f)
+#define make_cont(f) mk_single_cell(CUSTOM, {.value = f})
 
 #define is_tagged(e, tag) \
   !is_nil(e) && is_pair(e) && is_sym(car(e)) && !strcasecmp(car(e).str, tag)
@@ -161,7 +161,7 @@ expr eval(struct evaluator *ev, expr exp);
 #define callcc_proc(e) cadr(e)
 
 // Exit
-#define mk_exit(m) mk_cell(CUSTOM, .intv = 1)
+#define mk_exit(m) mk_single_cell(CUSTOM, {.intv = 1})
 #define is_exit(e) (e.type == CUSTOM && e.intv == 1)
 
 // Evaluator developers only

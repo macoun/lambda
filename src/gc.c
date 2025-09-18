@@ -12,21 +12,26 @@
 #include <stdio.h>
 #include <time.h>
 
+#define has_moved(e) ((e).cell_type == MOVED)
+#define is_struct(e) ((e).cell_type == STRUCT)
+#define is_array(e) ((e).cell_type == ARRAY)
+#define is_compound(e) (is_struct(e) || is_array(e))
+
 static struct cell relocate(struct memory *mem, struct cell *oldc)
 {
   if (!is_compound(*oldc))
     return *oldc;
   if (has_moved(oldc->array[0]))
-    return mk_cell(oldc->type, oldc->array[1].array);
+    return mk_cell(oldc->cell_type, oldc->type, {.array = oldc->array[1].array});
 
-  long size = (is_pair(*oldc)) ? 2 : (oldc->array[0].uintv + 1);
+  long size = (is_struct(*oldc)) ? 2 : (oldc->array[0].uintv + 1);
   struct cell *array = memory_alloc(mem, size, false);
-  struct cell newcell = mk_cell(oldc->type, array);
+  struct cell newcell = mk_cell(oldc->cell_type, oldc->type, {.array = array});
 
   for (long i = 0; i < size; i++)
     newcell.array[i] = oldc->array[i];
 
-  oldc->array[0].type = MOVED;
+  oldc->array[0].cell_type = MOVED;
   oldc->array[1].array = newcell.array;
 
   return newcell;

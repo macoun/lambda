@@ -48,7 +48,9 @@ expr cons(struct machine *m, expr a, expr b)
 {
   expr pair;
 
+  pair.cell_type = STRUCT;
   pair.type = PAIR;
+
   machine_push(m, a);
   machine_push(m, b);
   pair.array = memory_alloc(m->memory, 2, true);
@@ -230,6 +232,7 @@ expr vector(struct machine *m, long length, expr *exps)
   expr vect;
   int i;
 
+  vect.cell_type = ARRAY;
   vect.type = VECTOR;
   vect.array = memory_alloc(m->memory, length + 1, true);
   vect.array[0] = mk_num(length);
