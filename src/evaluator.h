@@ -41,14 +41,14 @@ expr eval(struct evaluator *ev, expr exp);
 #define make_cont(f) mk_single_cell(CUSTOM, {.value = f})
 
 #define is_tagged(e, tag) \
-  !is_nil(e) && is_pair(e) && is_sym(car(e)) && !strcasecmp(car(e).str, tag)
+  (!is_nil(e) && is_pair(e) && is_sym(car(e)) && !strcasecmp(car(e).str, tag))
 
 // Self-evaluating
 #define is_self_eval(e) \
   (is_num(e) || is_str(e) || is_nil(e) || is_real_true(e) || is_false(e))
 
 // Variable
-#define is_variable(e) is_sym(e)
+#define is_variable(e) is_sym(e) || is_scoped_sym(e)
 
 // Lambda
 #define is_lambda(e) is_tagged(e, "lambda")
@@ -112,17 +112,6 @@ expr eval(struct evaluator *ev, expr exp);
 #define is_syntax_rules(e) is_tagged(e, "syntax-rules")
 #define syntax_rules_literals(e) cadr(e)
 #define syntax_rules_patterns(e) cddr(e)
-
-#define is_syntax_pattern(e) is_pair(e) && is_pair(cdr(e))
-#define syntax_pattern(e) car(e)
-#define syntax_template(e) cadr(e)
-
-// Syntax transformers
-#define is_syntax_transformer(e) is_tagged((e), "syntax-transformer")
-#define make_syntax_transformer(m, literals, patterns) \
-  listn(m, 3, mk_sym("syntax-transformer"), literals, patterns)
-#define syntax_transformer_literals(e) cadr(e)
-#define syntax_transformer_patterns(e) caddr(e)
 
 // Ellipsis
 #define mk_ellipsis() mk_sym("...")

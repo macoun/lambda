@@ -50,7 +50,7 @@ void repl(struct evaluator *ev, struct macros_expander *expander, int argc, cons
       exp = parse_exp(ev->machine, &s, &error);
       if (error)
         break;
-      exp = macros_preprocess(expander, exp);
+      exp = macros_preprocess(expander, exp, machine_get_reg(ev->machine, ENV));
 
       machine_push(ev->machine, exp);
       exp = eval(ev, exp);

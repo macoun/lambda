@@ -19,7 +19,7 @@ enum expr_type
   VECTOR = 7,
   PRIMITIVE = 8,
   CUSTOM = 9,
-  SYMBOL_SCOPED = 10
+  SCOPED_SYMBOL = 10
 };
 
 struct cell
@@ -48,6 +48,7 @@ extern const struct cell TRUE;
 #define is_real_true(e) (e.type == CUSTOM && e.value == TRUE.value)
 #define is_pair(e) ((e).type == PAIR)
 #define is_sym(e) ((e).type == SYMBOL)
+#define is_scoped_sym(e) ((e).type == SCOPED_SYMBOL)
 #define is_str(e) ((e).type == STRING)
 #define is_num(e) ((e).type == INTEGER || (e).type == FLOAT)
 #define is_prim(e) ((e).type == PRIMITIVE)

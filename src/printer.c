@@ -71,9 +71,13 @@ void print_exp(expr exp)
   {
     printf(COLOR_YELLOW "\"%s\"" COLOR_RESET, exp.str);
   }
-  if (is_sym(exp))
+  else if (is_sym(exp))
   {
     printf("%s", exp.str);
+  }
+  else if (is_scoped_sym(exp))
+  {
+    printf(COLOR_GREEN "%s" COLOR_RESET, exp.array[0].str);
   }
   else if (is_num(exp))
   {

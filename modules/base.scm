@@ -263,3 +263,18 @@
   (if (equal? expected actual)
       (displayln "PASS: " message)
       (displayln "FAIL: " message)))
+
+; (define-syntax define
+;   (syntax-rules ()
+;     ((_ (name arg ...) body ...)
+;      (define name (lambda (arg ...) body ...)))
+;     ((_ name value)
+;      (define name value))))
+
+
+ ;(define-syntax f (syntax-rules () ((_ (list arg ...) arg list ...) (define name (lambda (arg ...) body ...)))))
+
+; (define-syntax car
+;   (syntax-rules ()
+;     ((_ cons) (car cons))
+;     ((_ a b) (car (cons a b)))))

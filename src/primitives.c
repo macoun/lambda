@@ -507,75 +507,64 @@ expr op_exit(struct machine *m, expr args)
   return mk_exit(m);
 }
 
+expr op_define(struct machine *m, expr args)
+{
+  expr var = car(args);
+  expr val = cadr(args);
+  expr env = machine_get_reg(m, ENV);
+  logexpr("Defining variable", var);
+  logexpr("With value", val);
+  env_define_variable(m, var, val, env);
+  return TRUE;
+}
+
 expr primitives_env(struct machine *m)
 {
-  expr vars, vals;
+  struct
+  {
+    const char *name;
+    expr (*fn)(struct machine *, expr);
+  } prims[] = {
+      {"+", op_add},
+      {"*", op_mul},
+      {"-", op_sub},
+      {"eq?", op_eq},
+      {"eqv?", op_eq},
+      {">", op_gt},
+      {"<", op_lt},
+      {"null?", op_is_null},
+      {"number?", op_is_number},
+      {"string?", op_is_string},
+      {"pair?", op_is_pair},
+      {"symbol?", op_is_symbol},
+      {"procedure?", op_is_procedure},
+      {"vector?", op_is_vector},
+      {"mod", op_mod},
+      {"make-vector", op_vector_create},
+      {"vector-length", op_vector_size},
+      {"vector-ref", op_vector_get},
+      {"vector-set!", op_vector_set},
+      {"car", op_car},
+      {"cdr", op_cdr},
+      {"cons", op_cons},
+      {"list", op_list},
+      {"list-ref", op_list_ref},
+      {"memq", op_memq},
+      {"display", op_print},
+      {"newline", op_println},
+      {"println", op_println},
+      {"env", op_environment},
+      {"machine-snapshot", op_machine_snapshot},
+      {"machine-restore", op_machine_restore},
+      {"exit", op_exit},
+      {"define", op_define}, // Handled specially in evaluator
+      {NULL, NULL}};
+  expr frame = NIL;
+  for (int i = 0; prims[i].name != NULL; i++)
+  {
+    expr binding = cons(m, mk_sym(prims[i].name), mk_prim(prims[i].fn));
+    frame = cons(m, binding, frame);
+  }
 
-  vars = listn(m, 29,
-               mk_sym("+"),
-               mk_sym("*"),
-               mk_sym("-"),
-               mk_sym("eq?"),
-               mk_sym("eqv?"),
-               mk_sym(">"),
-               mk_sym("<"),
-               mk_sym("null?"),
-               mk_sym("number?"),
-               mk_sym("string?"),
-               mk_sym("pair?"),
-               mk_sym("symbol?"),
-               mk_sym("procedure?"),
-               mk_sym("vector?"),
-               mk_sym("mod"),
-               mk_sym("make-vector"),
-               mk_sym("vector-length"),
-               mk_sym("vector-ref"),
-               mk_sym("vector-set!"),
-               mk_sym("car"),
-               mk_sym("cdr"),
-               mk_sym("cons"),
-               mk_sym("display"),
-               mk_sym("newline"),
-               mk_sym("println"),
-               mk_sym("env"),
-               mk_sym("machine-snapshot"),
-               mk_sym("machine-restore"),
-               mk_sym("exit"),
-               //  mk_sym("memq"),
-               //  mk_sym("list-ref"),
-               NIL);
-  vals = listn(m, 29,
-               mk_prim(op_add),
-               mk_prim(op_mul),
-               mk_prim(op_sub),
-               mk_prim(op_eq),
-               mk_prim(op_eq),
-               mk_prim(op_gt),
-               mk_prim(op_lt),
-               mk_prim(op_is_null),
-               mk_prim(op_is_number),
-               mk_prim(op_is_string),
-               mk_prim(op_is_pair),
-               mk_prim(op_is_symbol),
-               mk_prim(op_is_procedure),
-               mk_prim(op_is_vector),
-               mk_prim(op_mod),
-               mk_prim(op_vector_create),
-               mk_prim(op_vector_size),
-               mk_prim(op_vector_get),
-               mk_prim(op_vector_set),
-               mk_prim(op_car),
-               mk_prim(op_cdr),
-               mk_prim(op_cons),
-               mk_prim(op_print),
-               mk_prim(op_println),
-               mk_prim(op_println),
-               mk_prim(op_environment),
-               mk_prim(op_machine_snapshot),
-               mk_prim(op_machine_restore),
-               mk_prim(op_exit),
-               //  mk_prim(op_memq),
-               //  mk_prim(op_list_ref),
-               NIL);
-  return env_extend(m, vars, vals, NIL);
+  return env_extend_with_frame(m, frame, NIL);
 }

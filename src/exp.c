@@ -21,6 +21,9 @@ bool is_eq(expr a, expr b)
   {
     if (is_sym(a))
       return (!strcmp(a.str, b.str));
+    if (is_scoped_sym(a))
+      return (!strcmp(a.array[0].str, b.array[0].str) &&
+              a.array[1].value == b.array[1].value);
     return a.value == b.value;
   }
   return false;
@@ -166,7 +169,15 @@ expr list_append_x(struct machine *m, expr l, expr e)
   return l;
 }
 
-expr list_append(struct machine *m, expr l, expr e)
+// !! recursive version
+expr list_append(struct machine *m, expr a, expr b)
+{
+  if (is_nil(a))
+    return b;
+  return cons(m, car(a), list_append(m, cdr(a), b));
+}
+
+expr list_append2(struct machine *m, expr l, expr e)
 {
   expr head;
 

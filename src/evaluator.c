@@ -237,7 +237,15 @@ static void ev_quote(struct evaluator *ev)
 
 static void ev_variable(struct evaluator *ev)
 {
-  expr bind = env_lookup(get_reg(ev, EXP), get_reg(ev, ENV));
+  expr bind = FALSE;
+  if (is_scoped_sym(get_reg(ev, EXP)))
+  {
+    bind = get_reg(ev, EXP).array[1];
+  }
+  else
+  {
+    bind = env_lookup(get_reg(ev, EXP), get_reg(ev, ENV));
+  }
   if (is_false(bind))
   {
     error("Unbound variable %s", get_reg(ev, EXP).str);

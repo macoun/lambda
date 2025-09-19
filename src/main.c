@@ -37,7 +37,7 @@ int evaluate_file(struct evaluator *ev, struct macros_expander *expander, const 
     error("Error parsing file %s: %d", fname, err);
     return err;
   }
-  source = macros_preprocess(expander, source);
+  source = macros_preprocess(expander, source, machine_get_reg(ev->machine, ENV));
   if (is_false(source))
     return err;
   evaluate_expressions(ev, source);
@@ -107,8 +107,8 @@ int main(int argc, const char *argv[])
   struct macros_expander *expander = macros_create(ev->machine);
   load_modules(ev, expander, modules_dir);
   info("Lisper initialized");
-  add_primitives(ev->machine, list(ev->machine, mk_sym("say-hello"), NIL),
-                 list(ev->machine, mk_prim(prim_say_hello), NIL));
+  // add_primitives(ev->machine, list(ev->machine, mk_sym("say-hello"), NIL),
+  //                list(ev->machine, mk_prim(prim_say_hello), NIL));
 
   if (argc > 1)
   {
