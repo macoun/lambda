@@ -71,14 +71,20 @@ expr eval(struct evaluator *ev, expr exp);
 
 // Quasiquote
 #define is_quasiquote(e) is_tagged(e, "quasiquote")
+#define make_quasiquote(m, e) \
+  cons(m, mk_sym("quasiquote"), cons(m, e, NIL))
 #define quasiquote_text(e) cadr(e)
 
 // Unquote
 #define is_unquote(e) is_tagged(e, "unquote")
+#define make_unquote(m, e) \
+  cons(m, mk_sym("unquote"), cons(m, e, NIL))
 #define unquote_text(e) cadr(e)
 
 // Unquote splicing
 #define is_unquote_splicing(e) is_tagged(e, "unquote-splicing")
+#define make_unquote_splicing(m, e) \
+  cons(m, mk_sym("unquote-splicing"), cons(m, e, NIL))
 #define unquote_splicing_text(e) cadr(e)
 
 // Procedure

@@ -24,26 +24,25 @@
 ; (newline)
 
 
-(display (let-syntax ((swap!
-              (syntax-rules ()
-                ((_ a b)
-                (let ((tmp a))
-                  (set! a b)
-                  (set! b tmp))))))
 
-  (let ((x 1) (y 2))
-    (swap! x y)
-    (list x y))))
+(assert-equal (quasiquote (0 1 2)) '(0 1 2) "quasiquote simple")
+(assert-equal (quasiquote (0 (unquote (+ 1 2)) 4))
+              '(0 3 4)
+              "quasiquote unquote")
+(assert-equal (quasiquote (0 (unquote-splicing (list 1 2)) 4))
+              '(0 1 2 4)
+              "quasiquote unquote-splicing")
+(assert-equal (quasiquote (0 (unquote-splicing 1)))
+              '(0 . 1)
+              "quasiquote unquote-splicing single")
 
-(define-syntax m
-  (syntax-rules ()
-    ((_ x) (+ x 1))))
+(define b 5)
+(define s (list 1 2))
 
-;; Locally shadow m with a new definition
-(newline)
-(display 
-(let-syntax ((m (syntax-rules ()
-               ((_ x) (* x 2)))))
-  (m 5))) ; => 10
-(newline)
-(display (m 5)) ; => 6, original m is unaffected
+(assert-equal  `(a ,b c) 
+               '(a 5 c)
+               "quasiquote unquote")
+(assert-equal  `(a ,s c) '(a (1 2) c)
+               "quasiquote unquote-splicing")
+(assert-equal  `(a ,@s c) '(a 1 2 c)
+               "quasiquote unquote-splicing single")

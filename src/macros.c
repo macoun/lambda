@@ -6,12 +6,15 @@
 #include "pattern.h"
 #include "env.h"
 #include "transformer.h"
+#include "exp.h"
 #include <assert.h>
 
 static expr hygienic_rename(struct machine *m, expr patternvars, expr exp, expr scope, expr env);
 static expr hygienic_bind(struct machine *m, expr patternvars, expr template, expr env);
 static expr hygienic_gensym(struct machine *m, expr scopebinding);
 static expr hygienic_generate_scope_id();
+static expr quasiquote_expand_list(struct machine *m, expr exp, int depth);
+static expr quasiquote_expand(struct machine *m, expr exp, int depth);
 
 expr make_scoped_symbol(struct machine *m, expr sym, expr binding)
 {
@@ -99,8 +102,21 @@ expr macros_expand(struct macros_expander *expander, expr exp, expr env)
   struct machine *m = expander->machine;
   if (is_nil(expander->macros[0]))
     error("No environment for macros");
-
-  if (is_pair(exp))
+  if (is_quasiquote(exp))
+  {
+    exp = quasiquote_expand(m, quasiquote_text(exp), 1);
+  }
+  if (is_unquote(exp))
+  {
+    error("Unquote found outside quasiquote");
+    return FALSE;
+  }
+  else if (is_unquote_splicing(exp))
+  {
+    error("Unquote-splicing found outside quasiquote");
+    return FALSE;
+  }
+  else if (is_pair(exp))
   {
     expr head = car(exp);
     expr ptransformer = FALSE;
@@ -263,4 +279,69 @@ static expr hygienic_rename(struct machine *m, expr patternvars, expr exp, expr 
   {
     return exp;
   }
+}
+
+static expr quasiquote_expand(struct machine *m, expr exp, int depth)
+{
+  if (is_sym(exp))
+  {
+    return make_quote(m, exp);
+  }
+  else if (is_unquote(exp))
+  {
+    if (depth == 1)
+    {
+      return unquote_text(exp); // TODO goto macro expand
+    }
+    return listn(m, 2, mk_sym("list"), quasiquote_expand(m, exp, depth - 1));
+  }
+  else if (is_unquote_splicing(exp))
+  {
+    if (depth == 1)
+    {
+      error(",@ at top-level not allowed");
+      return FALSE;
+    }
+    return listn(m, 2, mk_sym("list"), quasiquote_expand(m, exp, depth - 1));
+  }
+  else if (is_quasiquote(exp))
+  {
+    expr text = quasiquote_text(exp);
+    return quasiquote_expand(m, text, depth + 1);
+  }
+  else if (is_pair(exp))
+  {
+    return quasiquote_expand_list(m, exp, depth);
+  }
+  return exp;
+}
+static expr quasiquote_expand_list(struct machine *m, expr exp, int depth)
+{
+  if (is_nil(exp))
+    return make_quote(m, NIL);
+
+  expr head = car(exp);
+  expr tail = cdr(exp);
+
+  if (is_unquote(head) && depth == 1)
+  {
+    /* cons the unquoted expression onto the expanded tail */
+    expr tail_expanded = quasiquote_expand_list(m, tail, depth);
+    return listn(m, 3, mk_sym("cons"), unquote_text(head), tail_expanded);
+  }
+  else if (is_unquote_splicing(head) && depth == 1)
+  {
+    expr splice_expr = unquote_splicing_text(head);
+    /* special-case splicing at end of list: return splice_expr directly */
+    if (is_nil(tail))
+    {
+      return splice_expr;
+    }
+    expr tail_expanded = quasiquote_expand_list(m, tail, depth);
+    return listn(m, 3, mk_sym("append"), splice_expr, tail_expanded);
+  }
+
+  expr head_expanded = quasiquote_expand(m, head, depth);
+  expr tail_expanded = quasiquote_expand_list(m, tail, depth);
+  return listn(m, 3, mk_sym("cons"), head_expanded, tail_expanded);
 }
